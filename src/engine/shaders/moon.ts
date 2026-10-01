@@ -81,18 +81,20 @@ ${GLSL_COMMON}
 const float SMAX = 0.6;
 
 vec3 topoRamp(float t) {
-  // muted hypsometric ramp (deep basin → mid → high), perceptually calm
-  vec3 c0 = vec3(0.10, 0.12, 0.35);
-  vec3 c1 = vec3(0.12, 0.38, 0.52);
-  vec3 c2 = vec3(0.55, 0.62, 0.50);
-  vec3 c3 = vec3(0.86, 0.72, 0.42);
-  vec3 c4 = vec3(0.88, 0.45, 0.30);
-  vec3 c5 = vec3(0.93, 0.90, 0.88);
-  if (t < 0.25) return mix(c0, c1, t / 0.25);
-  if (t < 0.45) return mix(c1, c2, (t - 0.25) / 0.20);
-  if (t < 0.65) return mix(c2, c3, (t - 0.45) / 0.20);
-  if (t < 0.85) return mix(c3, c4, (t - 0.65) / 0.20);
-  return mix(c4, c5, (t - 0.85) / 0.15);
+  // deep basin → low plains → mid → highlands → peaks. Muted, perceptually even.
+  vec3 c0 = vec3(0.16, 0.14, 0.42);
+  vec3 c1 = vec3(0.10, 0.36, 0.60);
+  vec3 c2 = vec3(0.30, 0.58, 0.58);
+  vec3 c3 = vec3(0.70, 0.74, 0.52);
+  vec3 c4 = vec3(0.90, 0.68, 0.38);
+  vec3 c5 = vec3(0.86, 0.38, 0.28);
+  vec3 c6 = vec3(0.97, 0.94, 0.92);
+  if (t < 0.12) return mix(c0, c1, t / 0.12);
+  if (t < 0.34) return mix(c1, c2, (t - 0.12) / 0.22);
+  if (t < 0.5) return mix(c2, c3, (t - 0.34) / 0.16);
+  if (t < 0.66) return mix(c3, c4, (t - 0.5) / 0.16);
+  if (t < 0.84) return mix(c4, c5, (t - 0.66) / 0.18);
+  return mix(c5, c6, (t - 0.84) / 0.16);
 }
 
 float gridLine(float g, float w) {
@@ -149,6 +151,18 @@ void main() {
 
   // ---- albedo (linear), graded
   vec3 alb = textureGrad(uAlbedo, uv, dx, dy).rgb;
+  // impact replay: show pristine, pre-impact terrain (blurred albedo, flat relief) around the site
+  float impThe = 9.0;
+  float impRho = max(uImpact.w, 1e-4);
+  float impF = uImpactState.w;
+  if (impF > 0.001) {
+    impThe = acos(clamp(dot(p, uImpact.xyz), -1.0, 1.0));
+    float wA = impF * (1.0 - smoothstep(5.0 * impRho, 13.0 * impRho, impThe));
+    vec2 ts = vec2(textureSize(uAlbedo, 0));
+    float lod = clamp(log2(max(impRho * ts.x / TAU * 1.6, 1.0)), 0.0, 9.0);
+    vec3 bg = textureLod(uAlbedo, uv, lod).rgb;
+    alb = mix(alb, bg, wA);
+  }
   float lum = dot(alb, vec3(0.2126, 0.7152, 0.0722));
   alb = mix(vec3(lum), alb, uGrade.z);
   alb = uGrade.x * pow(max(alb, vec3(1e-4)), vec3(uGrade.y));
@@ -158,6 +172,7 @@ void main() {
   vec2 e = (rl.rg - 0.5) * 2.0;
   vec2 s = SMAX * e * abs(e) * uReliefGain;
   float rough = 0.35 * rl.b * rl.b;
+  if (impF > 0.001) s *= 1.0 - impF * (1.0 - smoothstep(1.3 * impRho, 2.2 * impRho, impThe));
 
   vec3 E = normalize(vec3(p.z, 0.0, -p.x) + vec3(1e-6, 0.0, 0.0));
   vec3 N = cross(p, E);
@@ -249,15 +264,21 @@ void main() {
     float hm = textureGrad(uHeight, uv, dx, dy).r * 1737400.0;
     float t01 = clamp((hm - uTopoRange.x) / (uTopoRange.y - uTopoRange.x), 0.0, 1.0);
     vec3 ramp = topoRamp(t01);
-    float shade = clamp(0.25 + 1.25 * dot(col, vec3(0.3333)) / max(uSunInt, 0.01), 0.0, 1.6);
-    vec3 tcol = ramp * (0.25 + 0.75 * clamp(shade, 0.0, 1.0)) * 0.9;
-    col = mix(col, tcol, uOverlay.y * 0.78);
-    // contour every 1 km (2 km bold)
+    // fixed-light hillshade (from the north-west, 38° above the horizon) so relief reads on any date
+    float cel = cos(0.6632);
+    vec3 Lh = normalize(-0.7071 * cel * E + 0.7071 * cel * N + sin(0.6632) * p);
+    vec3 nx = normalize(p - 3.4 * (s.x * E + s.y * N));
+    float hs = clamp(dot(nx, Lh), 0.0, 1.0);
+    vec3 tcol = ramp * (0.16 + 1.25 * hs) * 0.8;
+    // topography is a map layer: it replaces the lighting (also on the night side)
+    col = mix(col, tcol, uOverlay.y * 0.94);
     float cg = abs(fract(hm / 1000.0 + 0.5) - 0.5);
     float cw = fwidth(hm / 1000.0);
-    float cl = 1.0 - smoothstep(cw * 0.5, cw * 1.6, cg);
-    float bold = 1.0 - smoothstep(0.0, 1.0, abs(fract(hm / 4000.0 + 0.5) - 0.5) * 4.0 / max(cw * 3.0, 1e-4));
-    col += vec3(0.95, 0.92, 0.85) * (cl * 0.10 + cl * bold * 0.10) * uOverlay.y;
+    float cl = 1.0 - smoothstep(cw * 0.5, cw * 1.5, cg);
+    float cg2 = abs(fract(hm / 5000.0 + 0.5) - 0.5);
+    float cw2 = fwidth(hm / 5000.0);
+    float cl2 = 1.0 - smoothstep(cw2 * 0.5, cw2 * 1.5, cg2);
+    col += vec3(0.95, 0.92, 0.85) * (cl * 0.05 + cl2 * 0.12) * uOverlay.y;
   }
 
   if (uOverlay.x > 0.001) {

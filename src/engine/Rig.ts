@@ -4,8 +4,10 @@ import { lonLatToVec } from '../astro/ephemeris'
 export type CamTarget =
   /** look at the Moon from above (lon, lat) at `dist` Moon-radii from its centre; north up */
   | { kind: 'surface'; lon: number; lat: number; dist: number; roll?: number }
-  /** orbit a focus point in the Earth–Moon system (ecliptic frame, +Y north) */
-  | { kind: 'system'; focus: Vector3; az: number; el: number; dist: number }
+  /** orbit a focus point in the Earth–Moon system (ecliptic frame, +Y north). `follow` makes `focus` an offset from the Moon / the Earth–Moon midpoint. */
+  | { kind: 'system'; focus: Vector3; az: number; el: number; dist: number; follow?: 'moon' | 'mid' }
+  /** stand on the Earth–Moon line looking at the Moon (as seen from Earth, ecliptic north up) */
+  | { kind: 'earthview'; dist: number; roll?: number }
   /** low-altitude "spacecraft" camera above a surface point looking along a heading */
   | { kind: 'ground'; lon: number; lat: number; alt: number; heading: number; pitch: number }
 
@@ -42,7 +44,23 @@ export function resolveTarget(
   user: { a: number; e: number },
   out: ResolvedTarget,
 ): ResolvedTarget {
-  out.anchored = t.kind !== 'system'
+  out.anchored = t.kind === 'surface' || t.kind === 'ground'
+  if (t.kind === 'earthview') {
+    out.dir.copy(moonPos).multiplyScalar(-1).normalize()
+    out.pivot.copy(moonPos)
+    out.dist = t.dist
+    out.up.set(0, 1, 0)
+    if (t.roll) out.up.applyAxisAngle(out.dir, t.roll * DEG)
+    // keep a stable up near the poles of the ecliptic
+    if (Math.abs(out.dir.y) > 0.98) out.up.set(0, 0, 1)
+    // user look-around: yaw about up, pitch about the camera's right axis
+    if (user.a || user.e) {
+      out.dir.applyAxisAngle(out.up, user.a)
+      const right = tmpA.crossVectors(out.up, out.dir).normalize()
+      out.dir.applyAxisAngle(right, -user.e)
+    }
+    return out
+  }
   if (t.kind === 'surface') {
     const lon = t.lon + user.a * (180 / Math.PI)
     const lat = Math.max(-89.5, Math.min(89.5, t.lat + user.e * (180 / Math.PI)))
@@ -60,6 +78,8 @@ export function resolveTarget(
     const el = Math.max(-1.45, Math.min(1.45, t.el + user.e))
     out.dir.set(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az))
     out.pivot.copy(t.focus)
+    if (t.follow === 'moon') out.pivot.add(moonPos)
+    else if (t.follow === 'mid') out.pivot.addScaledVector(moonPos, 0.5)
     out.dist = t.dist
     out.up.set(0, 1, 0)
     return out

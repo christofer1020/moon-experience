@@ -67,7 +67,8 @@ void main() {
 
   // night lights (hidden under cloud, stronger in the dark)
   float dark = 1.0 - smoothstep(-0.12, 0.05, ndl);
-  col += vec3(1.0, 0.74, 0.40) * pow(night, 1.3) * 2.2 * dark * (1.0 - cloud * 0.75);
+  float lights = pow(clamp((night - 0.07) / 0.93, 0.0, 1.0), 1.5);
+  col += vec3(1.0, 0.74, 0.40) * lights * 3.2 * dark * (1.0 - cloud * 0.75);
   // faint moonlit / airglow floor
   col += surf * 0.0035;
 

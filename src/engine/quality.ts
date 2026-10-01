@@ -32,7 +32,7 @@ const PRESETS: Record<Tier, Quality> = {
     dynamicRes: true,
     microDetail: false,
     starCount: 30000,
-    inset: 224,
+    inset: 256,
   },
   medium: {
     tier: 'medium',
@@ -48,7 +48,7 @@ const PRESETS: Record<Tier, Quality> = {
     dynamicRes: true,
     microDetail: true,
     starCount: 70000,
-    inset: 320,
+    inset: 400,
   },
   high: {
     tier: 'high',
@@ -64,7 +64,7 @@ const PRESETS: Record<Tier, Quality> = {
     dynamicRes: true,
     microDetail: true,
     starCount: 130000,
-    inset: 384,
+    inset: 512,
   },
 }
 
@@ -111,6 +111,7 @@ export function pickQuality(dev: DeviceInfo): Quality {
   // mobile: never fetch the heaviest albedo tier unless the device is strong
   if (dev.mobile && tier !== 'high') base.albedoSteps = base.albedoSteps.filter((s) => s !== '8k')
   if (dev.maxTexture < 8192) base.albedoSteps = base.albedoSteps.filter((s) => s !== '8k')
+  if (new URLSearchParams(location.search).get('dyn') === '0') base.dynamicRes = false
   const msaa = new URLSearchParams(location.search).get('aa')
   if (msaa !== null) base.msaa = Math.max(0, parseInt(msaa, 10) || 0)
   return base

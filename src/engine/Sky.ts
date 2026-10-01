@@ -34,7 +34,7 @@ export class Sky {
       fragmentShader: starsFrag,
       uniforms: { uPx: { value: 1 }, uGain: { value: 1 }, uTwinkle: { value: 0 }, uTime: { value: 0 } },
       blending: AdditiveBlending,
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       transparent: true,
     })
@@ -50,7 +50,7 @@ export class Sky {
         uGlare: { value: 1 },
       },
       blending: AdditiveBlending,
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       transparent: true,
     })

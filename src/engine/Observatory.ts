@@ -16,6 +16,7 @@ import { Rig, resolveTarget, type CamTarget, type ResolvedTarget } from './Rig'
 import { pickQuality, probeDevice, type DeviceInfo, type Quality } from './quality'
 import { lonLatToVec, skyAt, vecToLonLat, MOON_RADIUS_KM, type SkyState } from '../astro/ephemeris'
 import { SystemOverlay } from './SystemOverlay'
+import { ImpactFX } from './FX'
 
 export interface InsetParams {
   /** camera position in system frame */
@@ -73,7 +74,7 @@ export interface SceneParams {
   /** overlay system toggles (orbits, shadow cones, guides) */
   sys: SystemFlags
   pulse: { dir: Vector3 | null; strength: number }
-  impact: { active: boolean; dir: Vector3; radius: number; t: number; depth: number }
+  impact: { active: boolean; dir: Vector3; radius: number; t: number; depth: number; approach: number; flatten: number }
   idleSpin: number
 }
 
@@ -91,6 +92,7 @@ export interface SystemFlags {
   distanceRuler: number
   lightPulse: number
   moonLabelFlag: number
+  tide: number
 }
 
 export function defaultParams(): SceneParams {
@@ -105,9 +107,9 @@ export function defaultParams(): SceneParams {
     grain: 0.035,
     vignette: 0.55,
     starGain: 0,
-    sunInt: 2.6,
+    sunInt: 1.75,
     earthshine: 1,
-    grade: [1, 1, 1],
+    grade: [0.76, 1.14, 0.82],
     reliefGain: 1,
     grid: 0,
     topo: 0,
@@ -131,10 +133,10 @@ export function defaultParams(): SceneParams {
     tune: { tau: 0.7, vmax: 1.5, accel: 3.2 },
     sys: {
       orbit: 0, orbitOpacity: 1, nodes: 0, earthMoonLine: 0, sunRay: 0, umbra: 0, moonShadow: 0,
-      spinMarker: 0, noRotationGhost: 0, terminator: 0, distanceRuler: 0, lightPulse: 0, moonLabelFlag: 0,
+      spinMarker: 0, noRotationGhost: 0, terminator: 0, distanceRuler: 0, lightPulse: 0, moonLabelFlag: 0, tide: 0,
     },
     pulse: { dir: null, strength: 0 },
-    impact: { active: false, dir: new Vector3(1, 0, 0), radius: 0.05, t: 0, depth: 0.08 },
+    impact: { active: false, dir: new Vector3(1, 0, 0), radius: 0.05, t: 0, depth: 0.08, approach: -1, flatten: 0 },
     idleSpin: 0,
   }
 }
@@ -162,6 +164,7 @@ export class Observatory {
   readonly earth: EarthBody
   readonly sky = new Sky()
   readonly overlay: SystemOverlay
+  readonly fx = new ImpactFX()
   readonly post: Post
   readonly rig = new Rig()
   readonly quality: Quality
@@ -182,6 +185,8 @@ export class Observatory {
   height = 1
   renderScale = 1
   paused = false
+  /** QA only: accelerates all easing (set with ?ts=4) */
+  timeScale = Number(new URLSearchParams(location.search).get('ts') || 1) || 1
   userActive = false
   private target: ResolvedTarget = { pivot: new Vector3(), dir: new Vector3(0, 0, 1), dist: 3, up: new Vector3(0, 1, 0), anchored: true }
   private prevMoonPos = new Vector3()
@@ -218,6 +223,7 @@ export class Observatory {
     this.moon = new MoonBody(this.renderer, this.quality)
     this.earth = new EarthBody(Math.min(8, this.renderer.capabilities.getMaxAnisotropy()))
     this.overlay = new SystemOverlay()
+    this.moon.group.add(this.fx.group)
     this.scene.add(this.sky.group, this.earth.group, this.moon.group, this.overlay.group)
     this.sim = skyAt(new Date(this.simDateMs))
     this.post.bloomEnabled = this.quality.bloom
@@ -293,7 +299,7 @@ export class Observatory {
   }
 
   private frame(now: number, fixedDt?: number) {
-    const dt = fixedDt ?? Math.min(0.1, Math.max(0.0005, (now - this.last) / 1000))
+    const dt = (fixedDt ?? Math.min(0.1, Math.max(0.0005, (now - this.last) / 1000))) * this.timeScale
     this.last = now
     this.clock += dt
     this.frameCount++
@@ -531,7 +537,8 @@ export class Observatory {
     else pl.set(1, 0, 0, 0)
     const im = sh.impact
     u.uImpact.value.set(im.dir.x, im.dir.y, im.dir.z, im.radius)
-    u.uImpactState.value.set(im.t, im.active ? 1 : 0, im.depth, 0)
+    u.uImpactState.value.set(im.t, im.active ? 1 : 0, im.depth, im.flatten)
+    this.fx.update(im, sunB, this.renderer.getPixelRatio())
     this.moon.setMaskIds('sel', sh.maskSel)
     this.moon.setMaskIds('hover', sh.maskHover)
   }
@@ -670,6 +677,11 @@ export class Observatory {
     document.removeEventListener('visibilitychange', this.onVis)
     this.post.dispose()
     this.renderer.dispose()
+  }
+
+  /** rough orbit radius in world units for the current scale (for placing annotations) */
+  orbitRadiusHint(): number {
+    return this.overlay.orbitRadius || 24
   }
 
   /** helper for external readers */
