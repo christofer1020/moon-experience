@@ -67,7 +67,7 @@ export function makeCtx(obs: Observatory, p: SceneParams, dt: number, chapter: C
     dist(d) {
       let v = 1 + (d - 1) * k
       // whole-disc views on desktop: keep the Moon to ~70 % of the height so it sits between the text and tools columns
-      if (!(L.mobile || L.portrait) && d >= 3.2 && d < 12 && chapter.Tools && !chapter.bareTools) v = Math.max(v, chapter.wideTools ? 6.2 : 5.7)
+      if (!(L.mobile || L.portrait) && d >= 3.2 && d < 12 && chapter.Tools && !chapter.bareTools) v = Math.max(v, chapter.wideTools ? 6.6 : 6.2)
       return v
     },
     landmarks(ids, opts = {}) {

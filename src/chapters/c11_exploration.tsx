@@ -82,14 +82,15 @@ export const exploration: Chapter = {
     if (e.view === 'earthrise') {
       // Apollo 8: a low orbit over the limb; Earth does not rise from the surface — only from orbit.
       const u = c.free ? (c.now * 0.045) % 1 : clamp(c.bt * 1.05, 0, 1)
-      p.date = datePhase(3)
+      p.date = datePhase(28)
       p.earthVisible = true
       p.eduMix = 0
-      p.cam = { kind: 'ground', lon: lerp(121, 84, u), lat: 0.5, alt: 0.042, heading: 270, pitch: -7 }
+      p.cam = { kind: 'ground', lon: lerp(121, 84, u), lat: 0.5, alt: 0.064, heading: 270, pitch: -15 }
       p.fov = 31
       p.glare = 0.3
       p.exposure = 1.1
-      p.shadowReach = 0.05
+      // the height model is too coarse for hard cast shadows at 70 km altitude; the relief normals carry the light
+      p.shadows = false
       p.shift = [0, 0]
       c.compose('center', 0.0)
       p.shift = c.layout.mobile || c.layout.portrait ? [0, 0.12] : [0.12, 0]
