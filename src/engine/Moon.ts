@@ -17,6 +17,7 @@ import { moonFrag, moonVert } from './shaders/moon'
 import {
   dataUrl,
   fetchBitmap,
+  fetchBlob,
   fillMask,
   loadHeightTexture,
   loadLabelMap,
@@ -36,6 +37,28 @@ export interface RingSpec {
   widthPx: number
   reticle: boolean
   phase: number
+}
+
+export interface WindowMeta {
+  id: string
+  lon: number
+  lat: number
+  lonMin: number
+  lonMax: number
+  latMin: number
+  latMax: number
+  w: number
+  h: number
+  bytes: number
+}
+
+interface WindowSlot {
+  id: string
+  color: Texture | null
+  relief: Texture | null
+  weight: number
+  target: number
+  loading: boolean
 }
 
 export interface MoonLoadProgress {
@@ -74,6 +97,13 @@ export class MoonBody {
   private maskHoverKey = ''
   private loaded = new Set<string>()
   private anisotropy = 4
+  private winMeta: WindowMeta[] = []
+  private winSlots: WindowSlot[] = [
+    { id: '', color: null, relief: null, weight: 0, target: 0, loading: false },
+    { id: '', color: null, relief: null, weight: 0, target: 0, loading: false },
+  ]
+  private winDummyC = flatPixel(110, 108, 104)
+  private winDummyR = flatPixel(128, 128, 0)
   radius = 1
 
   constructor(private renderer: WebGLRenderer, private quality: Quality) {
@@ -128,8 +158,16 @@ export class MoonBody {
         uImpactState: { value: new Vector4(0, 0, 0.08, 0) },
         uPulse: { value: new Vector4(1, 0, 0, 0) },
         uTopoRange: { value: new Vector2(-9000, 10800) },
+        uWinC0: { value: null },
+        uWinR0: { value: null },
+        uWinC1: { value: null },
+        uWinR1: { value: null },
+        uWinRect: { value: [new Vector4(0, 1, 0, 1), new Vector4(0, 1, 0, 1)] },
+        uWinW: { value: new Vector2(0, 0) },
       },
     })
+    for (const k of ['uWinC0', 'uWinC1']) this.uniforms[k].value = this.winDummyC
+    for (const k of ['uWinR0', 'uWinR1']) this.uniforms[k].value = this.winDummyR
     this.mesh = new Mesh(geo, this.material)
     this.mesh.frustumCulled = false
     this.group.add(this.mesh)
@@ -205,6 +243,7 @@ export class MoonBody {
     // first-paint set
     await Promise.all(plan.map((p) => p.run().catch((e) => console.warn('asset failed', p.key, e))))
     report('ready', true)
+    void this.loadWindowIndex()
 
     // --- upgrades (background, sequential to be gentle on bandwidth + decode)
     const upgrades: { key: string; run: () => Promise<void> }[] = []
@@ -255,6 +294,119 @@ export class MoonBody {
         await new Promise((r) => setTimeout(r, 60))
       }
     })()
+  }
+
+  /* ---------------------------------------------------------------- hero windows */
+
+  private async loadWindowIndex() {
+    try {
+      const res = await fetch(dataUrl('windows/windows.json'))
+      if (!res.ok) return
+      const j = (await res.json()) as { windows: WindowMeta[] }
+      this.winMeta = j.windows
+    } catch (e) {
+      console.warn('window index failed', e)
+    }
+  }
+
+  /** windows that contain a selenographic point, best-centred first */
+  private windowsAt(lon: number, lat: number): WindowMeta[] {
+    const hits: { m: WindowMeta; d: number }[] = []
+    for (const m of this.winMeta) {
+      if (lon < m.lonMin || lon > m.lonMax || lat < m.latMin || lat > m.latMax) continue
+      const cx = ((lon - m.lonMin) / (m.lonMax - m.lonMin)) * 2 - 1
+      const cy = ((lat - m.latMin) / (m.latMax - m.latMin)) * 2 - 1
+      hits.push({ m, d: Math.max(Math.abs(cx), Math.abs(cy)) })
+    }
+    hits.sort((a, b) => a.d - b.d)
+    return hits.map((h) => h.m)
+  }
+
+  private async fillSlot(slot: WindowSlot, m: WindowMeta) {
+    slot.loading = true
+    try {
+      const sc = this.quality.windowScale
+      const resize = sc < 1 ? { resizeWidth: Math.round(m.w * sc), resizeQuality: 'high' as const } : {}
+      const [cb, rb] = await Promise.all([
+        fetchBlob(dataUrl(`windows/${m.id}_c.webp`)),
+        fetchBlob(dataUrl(`windows/${m.id}_r.jpg`)),
+      ])
+      const [cbmp, rbmp] = await Promise.all([
+        createImageBitmap(cb, { premultiplyAlpha: 'none', colorSpaceConversion: 'none', ...resize }),
+        createImageBitmap(rb, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }),
+      ])
+      if (slot.id !== m.id) {
+        cbmp.close()
+        rbmp.close()
+        return
+      }
+      slot.color = textureFromBitmap(cbmp, { srgb: true, anisotropy: this.anisotropy, repeatS: false })
+      slot.relief = textureFromBitmap(rbmp, { anisotropy: this.anisotropy, repeatS: false })
+    } catch (e) {
+      console.warn('window failed', m.id, e)
+      slot.id = ''
+    } finally {
+      slot.loading = false
+    }
+  }
+
+  private releaseSlot(slot: WindowSlot) {
+    slot.color?.dispose()
+    slot.relief?.dispose()
+    slot.color = slot.relief = null
+    slot.id = ''
+    slot.weight = 0
+    slot.target = 0
+  }
+
+  /**
+   * Called every frame with the surface point under the view centre and the camera's distance from the Moon's
+   * centre (Moon radii). Brings in the high-resolution tile for that place when we are close enough to see the difference.
+   */
+  updateWindows(lon: number, lat: number, camDist: number, dt: number) {
+    if (this.quality.windowScale <= 0 || this.winMeta.length === 0) return
+    const near = camDist < 4.6
+    const want = near ? this.windowsAt(lon, lat).slice(0, 2) : []
+    const fade = near ? 1 - Math.min(1, Math.max(0, (camDist - 2.2) / 1.1)) : 0
+    const slots = this.winSlots
+    for (const s of slots) s.target = 0
+    for (const m of want) {
+      let slot = slots.find((s) => s.id === m.id)
+      if (!slot) {
+        slot = slots.find((s) => s.id === '' && !s.loading) ?? slots.filter((s) => !want.some((w) => w.id === s.id) && !s.loading && s.weight < 0.02)[0]
+        if (!slot) continue
+        this.releaseSlot(slot)
+        slot.id = m.id
+        void this.fillSlot(slot, m)
+      }
+      slot.target = fade
+    }
+    const k = 1 - Math.exp(-dt * 3.2)
+    const u = this.uniforms
+    const wv = u.uWinW.value as Vector2
+    const rects = u.uWinRect.value as Vector4[]
+    for (let i = 0; i < 2; i++) {
+      const s = slots[i]
+      const ready = !!s.color && !!s.relief && !s.loading
+      s.weight += ((ready ? s.target : 0) - s.weight) * k
+      if (s.weight < 0.002 && s.target === 0 && s.color) {
+        // keep resident (cheap) until the slot is needed; just stop drawing it
+        s.weight = 0
+      }
+      const m = ready ? this.winMeta.find((x) => x.id === s.id) : undefined
+      if (m && s.weight > 0.002) {
+        rects[i].set(m.lonMin, m.lonMax, m.latMin, m.latMax)
+        u[i === 0 ? 'uWinC0' : 'uWinC1'].value = s.color
+        u[i === 0 ? 'uWinR0' : 'uWinR1'].value = s.relief
+        wv.setComponent(i, s.weight)
+      } else {
+        wv.setComponent(i, 0)
+        if (!ready || s.weight === 0) {
+          u[i === 0 ? 'uWinC0' : 'uWinC1'].value = this.winDummyC
+          u[i === 0 ? 'uWinR0' : 'uWinR1'].value = this.winDummyR
+        }
+      }
+    }
   }
 
   /** Highlight maria by id (label ids from mare_ids.png). Selected + hover masks. */

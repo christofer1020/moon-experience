@@ -72,6 +72,14 @@ uniform vec4 uImpactState;
 uniform vec4 uPulse;      // xyz dir, w intensity  (soft glow patch: sites, etc)
 uniform vec2 uTopoRange;  // metres min,max
 
+// hero windows: up to two high-resolution lat/lon tiles (colour + relief) blended over the global maps
+uniform sampler2D uWinC0;
+uniform sampler2D uWinR0;
+uniform sampler2D uWinC1;
+uniform sampler2D uWinR1;
+uniform vec4 uWinRect[2]; // lonMin, lonMax, latMin, latMax (degrees)
+uniform vec2 uWinW;       // blend weights
+
 in vec3 vDir;
 in vec3 vPos;
 out vec4 fragColor;
@@ -141,6 +149,14 @@ vec2 impactSlope(vec3 d, out float rays, out float flash, out float shock) {
   return vec2(dot(away, E), dot(away, N)) * s;
 }
 
+vec2 winUV(vec4 r, vec2 ll) {
+  return vec2((ll.x - r.x) / (r.y - r.x), (r.w - ll.y) / (r.w - r.z));
+}
+
+float winEdge(vec2 w) {
+  return smoothstep(0.0, 0.07, min(min(w.x, 1.0 - w.x), min(w.y, 1.0 - w.y)));
+}
+
 void main() {
   vec3 p = normalize(vDir);
   vec2 uv = dirToUV(p);
@@ -149,8 +165,46 @@ void main() {
   dx.x -= round(dx.x);
   dy.x -= round(dy.x);
 
+  // selenographic lon/lat in degrees, and their screen derivatives (for the window samplers)
+  float lonD = degrees(atan(-p.z, p.x));
+  float latD = degrees(asin(clamp(p.y, -1.0, 1.0)));
+  vec2 ll = vec2(lonD, latD);
+  vec2 llx = dFdx(ll);
+  vec2 lly = dFdy(ll);
+  llx.x -= 360.0 * round(llx.x / 360.0);
+  lly.x -= 360.0 * round(lly.x / 360.0);
+
   // ---- albedo (linear), graded
   vec3 alb = textureGrad(uAlbedo, uv, dx, dy).rgb;
+  float winTotal = 0.0;
+  vec4 winRl = vec4(0.0);
+  if (uWinW.x > 0.002) {
+    vec4 r = uWinRect[0];
+    vec2 w = winUV(r, ll);
+    float f = winEdge(w) * uWinW.x;
+    if (f > 0.0005) {
+      vec2 sz = vec2(r.y - r.x, r.w - r.z);
+      vec2 gx = vec2(llx.x / sz.x, -llx.y / sz.y);
+      vec2 gy = vec2(lly.x / sz.x, -lly.y / sz.y);
+      alb = mix(alb, textureGrad(uWinC0, w, gx, gy).rgb, f);
+      winRl += vec4(textureGrad(uWinR0, w, gx, gy).rgb, 1.0) * f;
+      winTotal += f;
+    }
+  }
+  if (uWinW.y > 0.002) {
+    vec4 r = uWinRect[1];
+    vec2 w = winUV(r, ll);
+    float f = winEdge(w) * uWinW.y;
+    if (f > 0.0005) {
+      vec2 sz = vec2(r.y - r.x, r.w - r.z);
+      vec2 gx = vec2(llx.x / sz.x, -llx.y / sz.y);
+      vec2 gy = vec2(lly.x / sz.x, -lly.y / sz.y);
+      alb = mix(alb, textureGrad(uWinC1, w, gx, gy).rgb, f);
+      winRl += vec4(textureGrad(uWinR1, w, gx, gy).rgb, 1.0) * f;
+      winTotal += f;
+    }
+  }
+  winTotal = min(winTotal, 1.0);
   // impact replay: show pristine, pre-impact terrain (blurred albedo, flat relief) around the site
   float impThe = 9.0;
   float impRho = max(uImpact.w, 1e-4);
@@ -169,6 +223,7 @@ void main() {
 
   // ---- relief normal
   vec4 rl = textureGrad(uRelief, uv, dx, dy);
+  if (winTotal > 0.0005) rl.rgb = mix(rl.rgb, winRl.rgb / max(winRl.a, 1e-4), winTotal);
   vec2 e = (rl.rg - 0.5) * 2.0;
   vec2 s = SMAX * e * abs(e) * uReliefGain;
   float rough = 0.35 * rl.b * rl.b;
@@ -180,7 +235,7 @@ void main() {
   // procedural sub-texel regolith relief, only when close
   if (uMicro > 0.001) {
     float fd = max(length(dx) + length(dy), 1e-7);           // uv footprint of a pixel
-    float closeness = smoothstep(2.2e-4, 3.0e-5, fd) * uMicro; // fades in below ~0.4 km/pixel
+    float closeness = smoothstep(2.2e-4, 3.0e-5, fd) * uMicro * (1.0 - 0.55 * winTotal); // fades in below ~0.4 km/pixel
     if (closeness > 0.002) {
       vec3 q = p * 900.0;
       float h0 = fbm3(q);
@@ -257,9 +312,6 @@ void main() {
   col = mix(col, col + alb * sunC * 0.55 * mu0, clamp(iRays, 0.0, 1.0));
 
   // ---- overlays (display-referred additive, independent of illumination)
-  float lonD = degrees(atan(-p.z, p.x));
-  float latD = degrees(asin(clamp(p.y, -1.0, 1.0)));
-
   if (uOverlay.y > 0.001) {
     float hm = textureGrad(uHeight, uv, dx, dy).r * 1737400.0;
     float t01 = clamp((hm - uTopoRange.x) / (uTopoRange.y - uTopoRange.x), 0.0, 1.0);

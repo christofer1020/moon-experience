@@ -199,6 +199,8 @@ export class Observatory {
   private fastFrames = 0
   private emaMs = 16
   private readonly tmp = new Vector3()
+  private readonly tmpV2 = new Vector3()
+  private readonly tmpV3 = new Vector3()
   private readonly tmpQ = new Quaternion()
   private readonly tmpQ2 = new Quaternion()
   private needsResize = true
@@ -414,6 +416,7 @@ export class Observatory {
     this.camera.updateProjectionMatrix()
 
     // --- overlays & uniforms
+    this.updateWindows(dt)
     this.updateMoonUniforms(this.camera)
     this.updateEarthAndSky(this.camera, false)
     this.overlay.update(this, dt)
@@ -572,6 +575,26 @@ export class Observatory {
 
   private earthFade() {
     return this.s.earthVisible ? 1 : 0
+  }
+
+  /** the surface point under the view centre drives which high-resolution window is resident */
+  private updateWindows(dt: number) {
+    const c = this.camera.position
+    const m = this.moonPosWorld
+    const oc = this.tmp.copy(c).sub(m)
+    const camDist = oc.length()
+    const dir = this.tmpV2.copy(this.rig.pivot).sub(c)
+    const L = dir.length()
+    if (L < 1e-6) return
+    dir.multiplyScalar(1 / L)
+    const b = oc.dot(dir)
+    const disc = b * b - (oc.lengthSq() - 1)
+    let hit: Vector3
+    if (disc >= 0 && -b - Math.sqrt(disc) > 0) hit = this.tmpV3.copy(c).addScaledVector(dir, -b - Math.sqrt(disc)).sub(m)
+    else hit = this.tmpV3.copy(oc).normalize()
+    const body = hit.applyQuaternion(this.tmpQ2.copy(this.moonQuat).invert())
+    const ll = vecToLonLat(body)
+    this.moon.updateWindows(ll.lon, ll.lat, camDist, dt)
   }
 
   private updateHud(dt: number) {

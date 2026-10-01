@@ -15,6 +15,8 @@ export interface Quality {
   microDetail: boolean
   starCount: number
   inset: number
+  /** hero-window texture scale (0 = disabled) */
+  windowScale: number
 }
 
 const PRESETS: Record<Tier, Quality> = {
@@ -33,6 +35,7 @@ const PRESETS: Record<Tier, Quality> = {
     microDetail: false,
     starCount: 30000,
     inset: 256,
+    windowScale: 0.5,
   },
   medium: {
     tier: 'medium',
@@ -49,6 +52,7 @@ const PRESETS: Record<Tier, Quality> = {
     microDetail: true,
     starCount: 70000,
     inset: 400,
+    windowScale: 1,
   },
   high: {
     tier: 'high',
@@ -65,6 +69,7 @@ const PRESETS: Record<Tier, Quality> = {
     microDetail: true,
     starCount: 130000,
     inset: 512,
+    windowScale: 1,
   },
 }
 
@@ -112,6 +117,7 @@ export function pickQuality(dev: DeviceInfo): Quality {
   if (dev.mobile && tier !== 'high') base.albedoSteps = base.albedoSteps.filter((s) => s !== '8k')
   if (dev.maxTexture < 8192) base.albedoSteps = base.albedoSteps.filter((s) => s !== '8k')
   if (new URLSearchParams(location.search).get('dyn') === '0') base.dynamicRes = false
+  if (new URLSearchParams(location.search).get('win') === '0') base.windowScale = 0
   const msaa = new URLSearchParams(location.search).get('aa')
   if (msaa !== null) base.msaa = Math.max(0, parseInt(msaa, 10) || 0)
   return base
