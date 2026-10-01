@@ -18,5 +18,7 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173 },
+  // '.app.github.dev' lets the dev server answer through a GitHub Codespaces forwarded port
+  server: { port: 5173, allowedHosts: ['.app.github.dev'] },
+  preview: { port: 4173, allowedHosts: ['.app.github.dev'] },
 })
