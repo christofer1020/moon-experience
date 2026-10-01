@@ -53,7 +53,7 @@ Query parameters for QA: `?q=low|medium|high` quality tier, `?aa=0` no MSAA, `?d
 | Close-up detail | NASA Trek — LRO WAC global mosaic | Public domain |
 | Feature names, positions, sizes | IAU Gazetteer of Planetary Nomenclature (USGS) | Open data |
 | Apollo coordinates | Apollo Lunar Surface Journal | Reference data |
-| Stars | HYG database v4.1 (D. Nash) | CC BY-SA 4.0 (the derived `public/data/sky/stars.bin` stays under the same licence) |
+| Stars | HYG database v4.1 (D. Nash) | CC BY-SA 4.0 (the derived `public/data/sky/stars.b64.txt` stays under the same licence) |
 | Earth | NASA Blue Marble (topo+bathy), Black Marble 2016 | Public domain |
 | Ephemerides | `astronomy-engine` (D. Cross) | MIT |
 | Fonts | Instrument Serif / Instrument Sans / JetBrains Mono via Fontsource | SIL OFL 1.1 |

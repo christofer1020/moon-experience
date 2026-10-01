@@ -64,7 +64,14 @@ export class Sky {
   async load(starCount: number) {
     try {
       const [buf, meta] = await Promise.all([
-        fetch(dataUrl('sky/stars.bin')).then((r) => r.arrayBuffer()),
+        fetch(dataUrl('sky/stars.b64.txt'))
+          .then((r) => r.text())
+          .then((t) => {
+            const bin = atob(t.trim())
+            const u8 = new Uint8Array(bin.length)
+            for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i)
+            return u8.buffer
+          }),
         fetch(dataUrl('sky/stars.json')).then((r) => r.json()),
       ])
       this.starNames = meta.named ?? []

@@ -91,7 +91,11 @@ export default function App() {
       if (s.chapterIdx !== p.chapterIdx) {
         sound.setChapter(s.chapterIdx)
         sound.cue('whoosh')
-        history.replaceState(null, '', `#${CHAPTERS[s.chapterIdx].id}`)
+        try {
+          history.replaceState(null, '', `#${CHAPTERS[s.chapterIdx].id}`)
+        } catch {
+          /* sandboxed frames may refuse history changes */
+        }
       } else if (s.beatIdx !== p.beatIdx && s.phase === 'live') {
         const c = CHAPTERS[s.chapterIdx].beats[s.beatIdx]?.cue ?? 'beat'
         if (c !== 'none') sound.cue(c)

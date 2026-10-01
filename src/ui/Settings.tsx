@@ -3,12 +3,25 @@ import { engine } from '../app/engine'
 
 export function Settings() {
   const { settingsOpen, reducedMotion, soundOn, tool, setTool, set, phase } = useStore()
-  const q = new URLSearchParams(location.search).get('q') ?? 'auto'
+  const stored = (() => {
+    try {
+      return localStorage.getItem('selene-quality')
+    } catch {
+      return null
+    }
+  })()
+  const q = new URLSearchParams(location.search).get('q') ?? stored ?? 'auto'
   const setQ = (v: string) => {
+    try {
+      if (v === 'auto') localStorage.removeItem('selene-quality')
+      else localStorage.setItem('selene-quality', v)
+    } catch {
+      /* storage unavailable: the choice applies to this URL only */
+    }
     const u = new URL(location.href)
-    if (v === 'auto') u.searchParams.delete('q')
-    else u.searchParams.set('q', v)
-    location.href = u.toString()
+    u.searchParams.delete('q')
+    if (u.href === location.href) location.reload()
+    else location.href = u.toString()
   }
   if (phase !== 'live') return null
   return (

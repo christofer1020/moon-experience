@@ -3,7 +3,7 @@
 Pack the HYG star database (Hipparcos / Yale BSC / Gliese; D. Nash, CC BY-SA 4.0) into a compact binary.
 Record (8 bytes, sorted by brightness): int16 x,y,z (J2000 equatorial unit vector * 32767),
 uint8 magnitude ((mag+2)*20), uint8 colour index ((B-V+0.5)*100).
-Output: public/data/sky/stars.bin  (+ stars.json header)
+Output: public/data/sky/stars.b64.txt  (base64 of the binary records, so any static host/CDN serves it as text; + stars.json header)
 """
 import csv, json, os, struct
 import numpy as np
@@ -40,7 +40,8 @@ for mag, ra, dec, ci in stars:
         int(np.clip(round((mag + 2.0) * 20), 0, 255)),
         int(np.clip(round((ci + 0.5) * 100), 0, 255)),
     )
-open(os.path.join(OUT, "stars.bin"), "wb").write(buf)
+import base64
+open(os.path.join(OUT, "stars.b64.txt"), "w").write(base64.b64encode(buf).decode())
 json.dump({"count": len(stars), "recordBytes": 8, "magLimit": MAG_LIMIT, "named": named,
            "credit": "HYG Database v4.1 (David Nash), CC BY-SA 4.0; data from Hipparcos, Yale BSC, Gliese"},
           open(os.path.join(OUT, "stars.json"), "w"), indent=1)

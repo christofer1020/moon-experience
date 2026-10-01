@@ -15,8 +15,14 @@ import {
 
 export const BASE = import.meta.env.BASE_URL
 
+/**
+ * Production: data lives next to the bundle (`assets/*.js` and `data/*`), so resolve it from the script's own URL.
+ * That works wherever the build is hosted, whatever URL the page itself is opened at (sub-paths, no trailing slash, embeds).
+ */
+const DATA_ROOT = import.meta.env.PROD ? new URL('../data/', import.meta.url).href : `${BASE}data/`
+
 export function dataUrl(path: string): string {
-  return `${BASE}data/${path}`
+  return DATA_ROOT + path
 }
 
 /** fetch with byte-level progress reporting */

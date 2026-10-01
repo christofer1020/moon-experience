@@ -105,7 +105,14 @@ export function probeDevice(): DeviceInfo {
 }
 
 export function pickQuality(dev: DeviceInfo): Quality {
-  const q = new URLSearchParams(location.search).get('q') as Tier | null
+  let q = new URLSearchParams(location.search).get('q') as Tier | null
+  if (!q) {
+    try {
+      q = localStorage.getItem('selene-quality') as Tier | null
+    } catch {
+      /* storage unavailable */
+    }
+  }
   let tier: Tier
   if (q === 'low' || q === 'medium' || q === 'high') tier = q
   else if (/swiftshader|llvmpipe|software/i.test(dev.gpu)) tier = 'low'
