@@ -107,7 +107,7 @@ function makeCone(color: number, additive: boolean) {
     side: DoubleSide,
     blending: additive ? AdditiveBlending : undefined,
   })
-  const m = new Mesh(new CylinderGeometry(1, 1, 1, 72, 1, true), mat)
+  const m = new Mesh(new CylinderGeometry(1, 1, 1, 96, 64, true), mat)
   m.frustumCulled = false
   m.renderOrder = 5
   ;(m as unknown as { cu: ConeUniforms }).cu = uniforms
