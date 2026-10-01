@@ -76,6 +76,8 @@ export interface SceneParams {
   pulse: { dir: Vector3 | null; strength: number }
   impact: { active: boolean; dir: Vector3; radius: number; t: number; depth: number; approach: number; flatten: number }
   idleSpin: number
+  /** jump the camera straight to the target this frame (used behind a dip to black) */
+  camSnap: boolean
 }
 
 export interface SystemFlags {
@@ -93,6 +95,8 @@ export interface SystemFlags {
   lightPulse: number
   moonLabelFlag: number
   tide: number
+  /** > 0: fade Earth's shadow cones away from the Moon along the axis (Moon radii), so a long cone reads as a soft band */
+  umbraSpan: number
 }
 
 export function defaultParams(): SceneParams {
@@ -133,11 +137,12 @@ export function defaultParams(): SceneParams {
     tune: { tau: 0.7, vmax: 1.5, accel: 3.2 },
     sys: {
       orbit: 0, orbitOpacity: 1, nodes: 0, earthMoonLine: 0, sunRay: 0, umbra: 0, moonShadow: 0,
-      spinMarker: 0, noRotationGhost: 0, terminator: 0, distanceRuler: 0, lightPulse: 0, moonLabelFlag: 0, tide: 0,
+      spinMarker: 0, noRotationGhost: 0, terminator: 0, distanceRuler: 0, lightPulse: 0, moonLabelFlag: 0, tide: 0, umbraSpan: 0,
     },
     pulse: { dir: null, strength: 0 },
     impact: { active: false, dir: new Vector3(1, 0, 0), radius: 0.05, t: 0, depth: 0.08, approach: -1, flatten: 0 },
     idleSpin: 0,
+    camSnap: false,
   }
 }
 
@@ -188,7 +193,11 @@ export class Observatory {
   /** QA only: accelerates all easing (set with ?ts=4) */
   timeScale = Number(new URLSearchParams(location.search).get('ts') || 1) || 1
   userActive = false
-  private target: ResolvedTarget = { pivot: new Vector3(), dir: new Vector3(0, 0, 1), dist: 3, up: new Vector3(0, 1, 0), anchored: true }
+  /** simulation clock in seconds (advances with frames, stops while hidden, scaled by ?ts) */
+  get time() {
+    return this.clock
+  }
+  private target: ResolvedTarget = { pivot: new Vector3(), dir: new Vector3(0, 0, 1), dist: 3, up: new Vector3(0, 1, 0), anchored: true, rides: 'none' }
   private prevMoonPos = new Vector3()
   private prevMoonQuat = new Quaternion()
   private moonDelta = { prevPos: new Vector3(), pos: new Vector3(), dq: new Quaternion() }
@@ -208,6 +217,9 @@ export class Observatory {
   private renderScaleIdx = 0
   private idleLon = 0
   private frameCount = 0
+  /** QA: advance the simulation without drawing */
+  private skipRender = false
+  private impactKey = ''
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -268,7 +280,11 @@ export class Observatory {
 
   /** render exactly one frame with a fixed dt (used by automated screenshots) */
   stepOnce(dt = 1 / 30, n = 1) {
-    for (let i = 0; i < n; i++) this.frame(this.last + dt * 1000, dt)
+    for (let i = 0; i < n; i++) {
+      this.skipRender = i < n - 1
+      this.frame(this.last + dt * 1000, dt)
+    }
+    this.skipRender = false
   }
 
   private onVis = () => {
@@ -349,13 +365,18 @@ export class Observatory {
     p.pulse = fresh.pulse
     p.impact = fresh.impact
     p.idleSpin = 0
+    p.camSnap = false
     this.driver?.(p, dt, this)
     if (this.frameCount === 1) this.simDateMs = p.date
 
     // --- smooth scalar params
     const s = this.s
     const k = 1 - Math.exp(-dt / 0.45)
-    for (const key of SMOOTH_KEYS) (s[key] as number) += ((p[key] as number) - (s[key] as number)) * k
+    for (const key of SMOOTH_KEYS) {
+      // a dip to black closes quickly and opens slowly
+      const kk = key === 'fade' && p.fade > s.fade ? 1 - Math.exp(-dt / 0.14) : k
+      ;(s[key] as number) += ((p[key] as number) - (s[key] as number)) * kk
+    }
     s.grade = p.grade
     s.shadows = p.shadows
     s.shadowReach = p.shadowReach
@@ -405,6 +426,7 @@ export class Observatory {
     const cam = p.cam.kind === 'surface' ? ({ ...p.cam, lon: p.cam.lon + this.idleLon } as CamTarget) : p.cam
     resolveTarget(cam, this.moonPosWorld, this.moonQuat, this.rig.user, this.target)
     const minD = this.minCamDistance(this.target)
+    if (p.camSnap) this.rig.snap(this.target)
     this.rig.step(this.target, dt, p.tune, p.fov, p.shift, minD, this.moonDelta)
     this.rig.apply(this.camera)
     this.safeguardCamera()
@@ -422,6 +444,10 @@ export class Observatory {
     this.overlay.update(this, dt)
 
     // --- render
+    if (this.skipRender) {
+      this.updateHud(dt)
+      return
+    }
     const px = this.renderer.getPixelRatio()
     this.post.params.exposure = s.exposure
     this.post.params.bloom = s.bloom
@@ -519,7 +545,10 @@ export class Observatory {
     u.uSunBody.value.copy(sunB)
     u.uCamBody.value.copy(cam.position).sub(this.moonPosWorld).applyQuaternion(inv)
     u.uEarthBody.value.set(0, 0, 0).sub(this.moonPosWorld).applyQuaternion(inv)
-    u.uEarthR.value = EARTH_R
+    // when the Moon is drawn closer than it really is (educational scale), shrink the occluders by the same factor so
+    // that the angular sizes — and therefore eclipses and shadows — stay true
+    const compress = this.moonPosWorld.length() / Math.max(sim.moonPos.length(), 1e-6)
+    u.uEarthR.value = EARTH_R * compress
     u.uSunAng.value = (sim.sunAngDeg / 2) * (Math.PI / 180)
     u.uSunInt.value = this.s.sunInt
     const moonDir = this.moonPosWorld.clone().normalize()
@@ -541,6 +570,15 @@ export class Observatory {
     const im = sh.impact
     u.uImpact.value.set(im.dir.x, im.dir.y, im.dir.z, im.radius)
     u.uImpactState.value.set(im.t, im.active ? 1 : 0, im.depth, im.flatten)
+    if (im.flatten > 0.001) {
+      // the ground level around the site is read from the height model once per replay site
+      const key = `${im.dir.x.toFixed(4)},${im.dir.y.toFixed(4)},${im.dir.z.toFixed(4)},${im.radius.toFixed(4)}`
+      if (key !== this.impactKey) {
+        this.impactKey = key
+        const ll = vecToLonLat(im.dir)
+        u.uImpactBase.value = this.moon.ringHeight(ll.lon, ll.lat, im.radius * 1.7)
+      }
+    }
     this.fx.update(im, sunB, this.renderer.getPixelRatio())
     this.moon.setMaskIds('sel', sh.maskSel)
     this.moon.setMaskIds('hover', sh.maskHover)
@@ -559,6 +597,7 @@ export class Observatory {
       time: this.clock,
       sunAng,
       sunInt: s.sunInt,
+      occluderScale: this.moonPosWorld.length() / Math.max(sim.moonPos.length(), 1e-6),
       visible: (s.earthVisible || this.earthFade() > 0.01) && !hideEarth,
     })
     this.earth.mesh.material.uniforms.uCloud.value = s.cloud

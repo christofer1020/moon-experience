@@ -10,9 +10,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
-          astro: ['astronomy-engine'],
+        manualChunks(id: string) {
+          if (id.includes('node_modules/three/')) return 'three'
+          if (id.includes('node_modules/astronomy-engine/')) return 'astro'
+          return undefined
         },
       },
     },

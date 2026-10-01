@@ -7,8 +7,8 @@
   --ink-2: #0a0c0f;
   --bone: #ece7db;
   --bone-2: #cfcabd;
-  --mute: #8f8d86;
-  --faint: #5d5c58;
+  --mute: #a6a49b;
+  --faint: #7a7973;
   --hair: rgba(236, 231, 219, 0.14);
   --hair-2: rgba(236, 231, 219, 0.3);
   --amber: #e7c48e;
@@ -149,6 +149,12 @@ ol {
     linear-gradient(0deg, rgba(5, 6, 8, 0.78) 0%, rgba(5, 6, 8, 0) 26%),
     linear-gradient(180deg, rgba(5, 6, 8, 0.6) 0%, rgba(5, 6, 8, 0) 15%);
   transition: opacity 1.2s var(--ease);
+}
+.scrim.rt {
+  background: linear-gradient(270deg, rgba(5, 6, 8, 0.78) 0%, rgba(5, 6, 8, 0.52) 20%, rgba(5, 6, 8, 0) 40%),
+    linear-gradient(90deg, rgba(5, 6, 8, 0.86) 0%, rgba(5, 6, 8, 0.6) 26%, rgba(5, 6, 8, 0) 52%),
+    linear-gradient(0deg, rgba(5, 6, 8, 0.78) 0%, rgba(5, 6, 8, 0) 26%),
+    linear-gradient(180deg, rgba(5, 6, 8, 0.6) 0%, rgba(5, 6, 8, 0) 15%);
 }
 .scrim.light {
   opacity: 0.55;
@@ -624,9 +630,9 @@ ol {
 .tools {
   position: fixed;
   z-index: 15;
-  right: calc(var(--pad) + 52px);
+  right: calc(var(--pad) + 22px);
   bottom: calc(70px + var(--safe-b));
-  width: min(420px, 38vw);
+  width: min(370px, 32vw);
   pointer-events: none;
 }
 .tools > * {
@@ -635,16 +641,14 @@ ol {
 .tools::before {
   content: '';
   position: absolute;
-  inset: -40px -34px -30px -50px;
+  inset: -90px -80px -70px -110px;
   z-index: -1;
   pointer-events: none;
-  background: rgba(5, 6, 8, 0.82);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 46px), transparent),
-    linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 40px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 46px), transparent),
-    linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 40px), transparent);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
+  /* a soft pool of shade, not a plate: it reaches zero well inside its box so it has no edge */
+  background: radial-gradient(ellipse closest-side at 52% 54%, rgba(4, 5, 7, 0.4) 0%, rgba(4, 5, 7, 0.36) 50%, rgba(4, 5, 7, 0.14) 78%, rgba(4, 5, 7, 0) 100%);
+}
+.tools {
+  text-shadow: 0 0 10px rgba(3, 4, 6, 0.95), 0 0 3px rgba(3, 4, 6, 0.9), 0 1px 1px rgba(3, 4, 6, 0.8);
 }
 .tools-title {
   font-family: var(--mono);
@@ -1210,10 +1214,10 @@ ol {
   z-index: 55;
   top: calc(var(--topbar) - 6px);
   right: var(--pad);
-  width: min(320px, calc(100vw - 2 * var(--pad)));
-  padding: 18px 0 4px;
-  border-top: 1px solid var(--hair-2);
-  background: linear-gradient(rgba(5, 6, 8, 0.94), rgba(5, 6, 8, 0.8));
+  width: min(330px, calc(100vw - 2 * var(--pad)));
+  padding: 20px 20px 6px;
+  border: 1px solid var(--hair-2);
+  background: rgba(5, 6, 8, 0.94);
   display: none;
   flex-direction: column;
   gap: 16px;
@@ -1231,6 +1235,11 @@ ol {
   text-transform: uppercase;
   color: var(--bone-2);
   gap: 14px;
+}
+.settings label button {
+  padding: 0;
+  display: flex;
+  align-items: center;
 }
 .toggle {
   width: 34px;
@@ -1595,3 +1604,7 @@ button[aria-pressed='true'] .toggle::after {
     transform: none;
   }
 }
+
+/* audio-reactive micro-detail: the speaker's waves breathe with the actual output level */
+.snd-w1 { opacity: calc(0.5 + var(--audio, 0) * 1.8); }
+.snd-w2 { opacity: calc(0.2 + var(--audio, 0) * 2.8); }

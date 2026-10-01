@@ -4,12 +4,22 @@ export const moonVert = /* glsl */ `
 uniform sampler2D uHeight;
 uniform float uHeightScale;
 uniform vec4 uImpact;     // xyz = centre dir (body), w = angular radius (rad)
-uniform vec4 uImpactState; // x = progress 0..1, y = active, z = depth ratio, w = unused
+uniform vec4 uImpactState; // x = progress 0..1, y = active, z = depth ratio, w = flatten (0..1)
+uniform float uImpactBase;  // elevation the site is flattened to (fraction of R)
 
 out vec3 vDir;
 out vec3 vPos;
 
 ${GLSL_COMMON}
+
+// impact replay: the existing crater is wiped to the surrounding ground level before the new one forms
+float flatH(float h, vec3 d) {
+  float f = uImpactState.w;
+  if (f < 0.001) return h;
+  float th = acos(clamp(dot(d, uImpact.xyz), -1.0, 1.0));
+  float rho = max(uImpact.w, 1e-4);
+  return mix(h, uImpactBase, f * (1.0 - smoothstep(1.05 * rho, 1.9 * rho, th)));
+}
 
 float impactHeight(vec3 d) {
   if (uImpactState.y < 0.5) return 0.0;
@@ -29,7 +39,7 @@ float impactHeight(vec3 d) {
 
 void main() {
   vec3 d = normalize(position);
-  float h = textureLod(uHeight, dirToUV(d), 0.0).r * uHeightScale + impactHeight(d);
+  float h = flatH(textureLod(uHeight, dirToUV(d), 0.0).r * uHeightScale, d) + impactHeight(d);
   vec3 p = d * (1.0 + h);
   vDir = d;
   vPos = p;
@@ -69,6 +79,7 @@ uniform vec4 uRing[3];    // xyz dir, w angular radius
 uniform vec4 uRingP[3];   // x strength, y width(px), z style (0 plain, 1 reticle), w phase
 uniform vec4 uImpact;
 uniform vec4 uImpactState;
+uniform float uImpactBase;
 uniform vec4 uPulse;      // xyz dir, w intensity  (soft glow patch: sites, etc)
 uniform vec2 uTopoRange;  // metres min,max
 
@@ -87,6 +98,14 @@ out vec4 fragColor;
 ${GLSL_COMMON}
 
 const float SMAX = 0.6;
+
+float flatH(float h, vec3 d) {
+  float f = uImpactState.w;
+  if (f < 0.001) return h;
+  float th = acos(clamp(dot(d, uImpact.xyz), -1.0, 1.0));
+  float rho = max(uImpact.w, 1e-4);
+  return mix(h, uImpactBase, f * (1.0 - smoothstep(1.05 * rho, 1.9 * rho, th)));
+}
 
 vec3 topoRamp(float t) {
   // deep basin → low plains → mid → highlands → peaks. Muted, perceptually even.
@@ -269,7 +288,7 @@ void main() {
   float pl = dot(p, L);
   if (uShadowSteps > 0.5 && pl < 0.66 && pl > -0.2 && mu0 > 0.0) {
     // start from the fragment's own texture height (the interpolated mesh vertex height is too coarse)
-    float h0 = textureLod(uHeight, uv, 0.0).r * uHeightScale;
+    float h0 = flatH(textureLod(uHeight, uv, 0.0).r * uHeightScale, p);
     vec3 P0 = p * (1.0 + h0);
     float t = 0.0006;
     float growth = pow(uShadowReach / 0.0006, 1.0 / max(uShadowSteps - 1.0, 1.0));
@@ -278,12 +297,15 @@ void main() {
       if (float(i) >= uShadowSteps) break;
       vec3 q = P0 + L * t;
       float r = length(q);
-      float hq = textureLod(uHeight, dirToUV(q / r), 0.0).r * uHeightScale;
+      float hq = flatH(textureLod(uHeight, dirToUV(q / r), 0.0).r * uHeightScale, q / r);
       float dh = r - (1.0 + hq) + 0.00012;
       res = min(res, clamp(uShadowSoft * dh / t, 0.0, 1.0));
       t *= growth;
     }
     shadow = res * res * (3.0 - 2.0 * res);
+    // shadow hiding: seen from (nearly) the Sun's direction the shadowed ground is hidden behind the objects that cast it,
+    // which is why a full Moon looks flat. The cast-shadow term fades out toward zero phase angle.
+    shadow = mix(1.0, shadow, smoothstep(0.03, 0.5, alpha));
   }
 
   // eclipse: Earth occludes the Sun
@@ -302,7 +324,7 @@ void main() {
   float umbra = (1.0 - smoothstep(0.0, 0.25, vis)) * smoothstep(re + uSunAng * 2.0, re - uSunAng, dsep);
   float depthFrac = clamp(dsep / max(re - uSunAng, 1e-4), 0.0, 1.2);
   vec3 copper = mix(vec3(1.0, 0.30, 0.08) * 0.35, vec3(1.0, 0.55, 0.28) * 1.2, smoothstep(0.2, 1.0, depthFrac));
-  col += alb * copper * 0.020 * uSunInt * umbra * (0.45 + 0.55 * mue);
+  col += alb * copper * 0.075 * uSunInt * umbra * (0.45 + 0.55 * mue);
   col += alb * vec3(0.62, 0.74, 1.0) * uEarthshine * 0.011 * uSunInt * (0.25 + 0.75 * mue);
   col += alb * 0.0004; // starlight / zodiacal fill so the dark limb is never perfectly flat
 

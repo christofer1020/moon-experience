@@ -101,7 +101,7 @@ export const surface: Chapter = {
     const sel = s.selected?.kind === 'landmark' ? byId.get(s.selected.id) : null
     if (sel) {
       c.focus(sel)
-      p.date = dateSubsolar(sel.lon + 62)
+      p.date = dateSubsolar(sel.lon + 70)
       p.rings = [ringOf(sel, c.now)]
       c.compose('right', 0.85)
       c.landmarks('all')
@@ -110,7 +110,7 @@ export const surface: Chapter = {
     switch (beat) {
       case 0:
         p.cam = { kind: 'surface', lon: -12, lat: 14, dist: c.dist(4.6) }
-        p.date = dateSubsolar(86)
+        p.date = dateSubsolar(46)
         c.compose('right')
         c.landmarks(SURFACE_SET)
         p.idleSpin = 0.4

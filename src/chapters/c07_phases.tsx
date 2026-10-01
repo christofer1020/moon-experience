@@ -166,7 +166,7 @@ export const phases: Chapter = {
     const mw = obs.moonPosWorld
     c.note('earth', new Vector3(0, 0, 0), 'Earth', undefined, { tone: 'earth', dx: -26, dy: 26 })
     c.note('moon', mw, 'Moon', undefined, { tone: 'moon', dx: 18, dy: -22 })
-    c.note('sun', sd.clone().multiplyScalar(obs.orbitRadiusHint() * 1.28), 'To the Sun', 'parallel rays', { tone: 'sun', dx: -16, dy: -28, marker: false })
+    c.note('sun', sd.clone().multiplyScalar(obs.orbitRadiusHint() * 1.28), 'To the Sun', 'parallel rays', { tone: 'sun', dx: -16, dy: 30, marker: false })
     // observer view from Earth
     const dist = mw.length()
     const fov = (2 * Math.atan(1 / (0.8 * dist)) * 180) / Math.PI

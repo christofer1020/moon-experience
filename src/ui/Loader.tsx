@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { useStore } from '../store'
 import { engine } from '../app/engine'
 import { progress } from '../chapters/runner'
+import { chapterIndex } from '../chapters'
 
 /**
  * Loading is the opening: the loader is transparent over the live canvas. A thin crescent grows as data arrives,
@@ -41,10 +42,8 @@ export function Loader() {
         set({ phase: 'live' })
         const h = decodeURIComponent(location.hash.replace('#', ''))
         if (h) {
-          import('../chapters').then(({ chapterIndex }) => {
-            const i = chapterIndex(h)
-            if (i > 0) engine.scroll?.goTo(i, 0, { immediate: true })
-          })
+          const i = chapterIndex(h)
+          if (i > 0) engine.scroll?.goTo(i, 0, { immediate: true })
         }
       },
     })

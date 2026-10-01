@@ -16,6 +16,8 @@ export interface Beat {
   note?: string
   /** concise textual alternative of what the 3D scene shows (screen readers + reader view) */
   alt?: string
+  /** sound cue played when this beat arrives (default: a soft tick) */
+  cue?: 'chime' | 'beat' | 'none'
 }
 
 export interface Layout {
@@ -45,7 +47,7 @@ export interface SceneCtx {
   /** camera distance adjusted for narrow viewports so the Moon fits */
   dist: (d: number) => number
   /** show landmark labels (rank filter) */
-  landmarks: (ids: string[] | 'all', opts?: { maxRank?: 1 | 2 | 3; dim?: boolean }) => void
+  landmarks: (ids: string[] | 'all', opts?: { maxRank?: 1 | 2 | 3; dim?: boolean; unlit?: boolean }) => void
   focus: (l: Landmark | { lon: number; lat: number; dist?: number }, dist?: number) => void
   /** camera standing on the Earth–Moon line, looking at the Moon as seen from Earth (north up) */
   earthView: (dist: number) => CamTarget

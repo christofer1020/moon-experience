@@ -127,7 +127,7 @@ export const poles: Chapter = {
     p.exposure = 1.2
     const sel = s.selected?.kind === 'landmark' ? byId.get(s.selected.id) : null
     const hl = beat === 1 ? byId.get(south ? 'shackleton' : 'hermite') : beat === 2 ? byId.get('cabeus') : beat === 3 ? byId.get('shackleton') : null
-    c.landmarks(south ? SOUTH : NORTH, { maxRank: 3 })
+    c.landmarks(south ? SOUTH : NORTH, { maxRank: 3, unlit: true })
     if (sel && POLE_FEATURES.includes(sel.id)) {
       p.cam = { kind: 'surface', lon: sel.lon, lat: clamp(sel.lat, -89.4, 89.4), dist: c.dist(framing(sel) + 0.25) }
       p.rings = [ringOf(sel, c.now, 1)]

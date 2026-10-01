@@ -45,7 +45,6 @@ export default function App() {
         onPickLabel: (id) => {
           const sel = parseLabelId(id)
           useStore.getState().set({ selected: sel })
-          sound.cue('select')
         },
         onHoverLabel: (id) => {
           useStore.getState().set({ hover: id ? parseLabelId(id) : null })
@@ -58,7 +57,6 @@ export default function App() {
             const m = MARIA.find((x) => x.id === id)
             if (m) {
               useStore.getState().set({ selected: { kind: 'mare', id: m.key } })
-              sound.cue('select')
             }
           }
         },
@@ -91,9 +89,20 @@ export default function App() {
     const unsub = useStore.subscribe((s, p) => {
       if (s.chapterIdx !== p.chapterIdx || s.beatIdx !== p.beatIdx || s.selected !== p.selected) input.releaseUser(2.0, s.selected !== p.selected && s.chapterIdx === p.chapterIdx)
       if (s.chapterIdx !== p.chapterIdx) {
+        sound.setChapter(s.chapterIdx)
         sound.cue('whoosh')
         history.replaceState(null, '', `#${CHAPTERS[s.chapterIdx].id}`)
+      } else if (s.beatIdx !== p.beatIdx && s.phase === 'live') {
+        const c = CHAPTERS[s.chapterIdx].beats[s.beatIdx]?.cue ?? 'beat'
+        if (c !== 'none') sound.cue(c)
       }
+      if (s.selected && s.selected !== p.selected) sound.cue('select')
+      if (s.indexOpen !== p.indexOpen) sound.cue(s.indexOpen ? 'open' : 'close')
+    })
+    // audio follows motion and distance (and meters its own output for the interface)
+    obs.frameListeners.add((dt, o) => {
+      const v = Math.abs(scroll.lenis.velocity || 0) / 38
+      sound.update(dt, { speed: Math.min(1, Math.max(v, o.userActive ? 0.35 : 0)), dist: o.camera.position.distanceTo(o.moonPosWorld) })
     })
 
     obs
@@ -127,7 +136,7 @@ export default function App() {
       </a>
       <canvas ref={glRef} className="gl" tabIndex={0} role="img" aria-label="Interactive 3D model of the Moon. Drag or use the arrow keys to rotate, plus and minus to zoom." />
       <canvas ref={lblRef} className="labels" aria-hidden="true" />
-      <div className={`scrim ${scrim}`} />
+      <div className={`scrim ${scrim} ${(ch.Tools && !ch.bareTools && !ch.wideTools) || ch.id === 'facts' ? 'rt' : ''}`} />
       <main className="scroller" id="top" aria-hidden={phase !== 'live'}>
         <div id="scroll-space" />
         <div style={{ position: 'absolute', inset: 0 }}>

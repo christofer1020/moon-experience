@@ -57,6 +57,7 @@ function beatOf(e: TimelineEvent): Beat {
     eyebrow: `11 — Exploration · ${e.year}`,
     title: e.title.replace(/(\S+)$/, '*$1*'),
     body: [e.body],
+    cue: e.view === 'earthrise' ? 'chime' : undefined,
     alt: e.missionId ? `The Moon turned to the site of ${MISSION_BY_ID.get(e.missionId)?.name ?? e.title}.` : e.title,
   }
 }

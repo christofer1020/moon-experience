@@ -18,6 +18,7 @@ for (const st of steps.split('|')) {
   else if (cmd === 'enter') { await page.click('text=Enter silently'); }
   else if (cmd === 'live') { await page.waitForFunction(() => window.__selene && window.__selene.store.getState().phase === 'live', null, { timeout: 90000 }).catch(() => logs.push('no live')) }
   else if (cmd === 'ch') { await page.evaluate(([i, bb]) => window.__selene.scroll.goTo(+i, +(bb || 0), { immediate: true }), [a, b]); }
+  else if (cmd === 'settle') { await page.evaluate(([n, d]) => window.__selene.obs.stepOnce(+d || 0.2, +n || 20), [a, b]) }
   else if (cmd === 'wait') { await page.waitForTimeout(+a) }
   else if (cmd === 'shot') { await page.screenshot({ path: `${out}/${a}.png` }) }
   else if (cmd === 'eval') { const r = await page.evaluate(st.slice(5)); console.log('eval ->', JSON.stringify(r)) }

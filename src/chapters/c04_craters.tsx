@@ -129,7 +129,7 @@ export const craters: Chapter = {
     c.focus(l)
     p.rings = [ringOf(l, c.now, selId ? 1 : 0.7)]
     if (beat === 2 && !selId) p.date = datePhase(176)
-    else p.date = dateSubsolar(l.lon + 62)
+    else p.date = dateSubsolar(l.lon + 72)
     if (beat === 0 && !selId) {
       p.cam = { kind: 'surface', lon: -14, lat: -48, dist: c.dist(1.9) }
       p.rings = []

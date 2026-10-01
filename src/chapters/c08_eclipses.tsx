@@ -213,6 +213,7 @@ export const eclipses: Chapter = {
       const focus = anti.clone().multiplyScalar(L)
       focus.y += obs.moonPosWorld.y * 0.5
       p.sys.umbra = 1
+      p.sys.umbraSpan = m ? 60 : 44
       p.sys.nodes = 1
       p.sys.orbit = 1
       p.cam = { kind: 'system', focus, az: Math.atan2(-sd.z, sd.x), el: 0.05, dist: c.dist(70) }
@@ -239,6 +240,7 @@ export const eclipses: Chapter = {
     const mw = obs.moonPosWorld
     if (kind === 'lunar') {
       p.sys.umbra = 1
+      p.sys.umbraSpan = m ? 34 : 24
       const L = Math.max(mw.dot(anti), 100)
       const focus = anti.clone().multiplyScalar(L)
       // Sun on the left of the screen: the shadow runs off to the right
@@ -258,8 +260,9 @@ export const eclipses: Chapter = {
       // camera on the Moon side of Earth (direction fixed at the moment of greatest eclipse), Earth fills the view
       const peak = skyAt(ev.peak)
       const dir = peak.moonPos.clone().normalize()
-      p.cam = { kind: 'system', focus: new Vector3(0, 0, 0), az: Math.atan2(dir.x, dir.z), el: Math.asin(clamp(dir.y, -1, 1)), dist: c.dist(m ? 24 : 15.5) }
-      p.shift = m ? [0, 0.2] : [0.14, 0]
+      // seen from the side: the Moon's shadow arrives from the left and touches Earth
+      p.cam = { kind: 'system', focus: new Vector3(0, 0, 0), az: Math.atan2(dir.x, dir.z) + Math.PI / 2, el: 0.42, dist: c.dist(m ? 34 : 22) }
+      p.shift = m ? [0, 0.2] : [0.1, 0]
       p.fov = m ? 36 : 30
       // observer inset: from the point of greatest eclipse
       const so = ev as SolarEclipseEvent
@@ -283,7 +286,7 @@ export const eclipses: Chapter = {
       const ob = obscuration(rs, rm, sep)
       p.corona = sstep(0.985, 0.9995, ob)
       p.glare = 0.35 + 0.65 * (1 - p.corona)
-      c.note('earth', new Vector3(0, 0, 0), 'Earth', undefined, { tone: 'earth', dx: -20, dy: 28, marker: false })
+      c.note('track', obsPos, so.kind === 'total' ? 'Path of totality' : 'Greatest eclipse', 'the Moon’s shadow on Earth', { tone: 'moon', dx: 26, dy: -26 })
     }
   },
 }

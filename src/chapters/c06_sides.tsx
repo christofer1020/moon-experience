@@ -73,6 +73,7 @@ export const sides: Chapter = {
   heightVh: 520,
   scrim: 'left',
   Tools: SidesTools,
+  insetLabel: 'The Moon, seen from Earth',
   onEnter: (s) => s.setTool({ orbitPlay: true, orbitT: 0, noRotation: false }),
   beats: [
     {
@@ -104,7 +105,7 @@ export const sides: Chapter = {
       body: [
         'Nobody saw the far side until Luna 3 photographed it in October 1959. It is a different world: thicker crust, almost no dark plains, and the huge, ancient South Pole–Aitken basin.',
       ],
-      alt: 'The far side of the Moon fully lit: bright cratered highlands, with the dark Mare Moscoviense and Tsiolkovskiy crater.',
+      alt: 'The far side of the Moon in afternoon light: bright, heavily cratered highlands, the dark Mare Moscoviense and Tsiolkovskiy crater, and the terminator on the right.',
     },
     {
       id: 'libration',
@@ -132,21 +133,28 @@ export const sides: Chapter = {
     if (beat <= 1) {
       p.earthVisible = true
       p.eduMix = 1
-      p.eduDist = 24
+      p.eduDist = 11
       p.sys.orbit = 1
       p.sys.spinMarker = 1
       p.sys.noRotationGhost = s.tool.noRotation ? 1 : 0
       p.sys.earthMoonLine = 0.5
-      p.cam = { kind: 'system', focus: new Vector3(0, 0, 0), follow: 'mid', az: 0.55, el: 1.0, dist: c.dist(38) }
-      p.shift = c.layout.mobile || c.layout.portrait ? [0, 0.2] : [0.18, 0]
+      // fixed view of the whole orbit, centred on Earth, so the Moon can be followed round it
+      p.cam = { kind: 'system', focus: new Vector3(0, 0, 0), az: 0.55, el: 1.0, dist: c.dist(60) }
+      p.shift = c.layout.mobile || c.layout.portrait ? [0, 0.22] : [0.15, 0.08]
       p.starGain = 0.5
       p.fov = 30
-      c.note('earth', new Vector3(0, 0, 0), 'Earth', undefined, { tone: 'earth', dx: -22, dy: 22 })
-      c.note('moon', moonW, 'Moon', 'near side faces Earth', { tone: 'moon', dx: 20, dy: -22 })
+      c.note('earth', new Vector3(0, 0, 0), 'Earth', undefined, { tone: 'earth', dx: -22, dy: 30 })
+      c.note('moon', moonW, 'Moon', 'near side faces Earth', { tone: 'moon', dx: 18, dy: -20 })
+      // the view from Earth never changes: the same face, every day of the month
+      const dM = moonW.length()
+      const fovI = (2 * Math.atan(1 / (0.8 * dM)) * 180) / Math.PI
+      const m = c.layout.mobile || c.layout.portrait
+      p.inset = { from: new Vector3(0, 0, 0), at: moonW.clone(), fov: fovI, up: new Vector3(0, 1, 0), x: m ? 0.8 : 0.85, y: m ? 0.8 : 0.72, r: m ? 0.09 : 0.14, hideEarth: true }
       return
     }
     if (beat === 2) {
-      p.date = datePhase(8)
+      // afternoon Sun over the Mare Moscoviense / Tsiolkovskiy side, so craters and the terminator show their relief
+      p.date = dateSubsolar(122)
       p.cam = { kind: 'surface', lon: 178, lat: 6, dist: c.dist(5.2) }
       c.compose('right', 0.9)
       c.landmarks(['tsiolkovskiy', 'spa'], { maxRank: 1 })

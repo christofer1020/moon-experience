@@ -62,8 +62,8 @@ void main() {
   vec3 col = surf * sunC * diff * 0.95 + vec3(1.0, 0.96, 0.9) * spec * 0.55 * sunC * diff;
 
   // twilight band
-  float tw = exp(-pow((ndl + 0.02) / 0.10, 2.0));
-  col += vec3(1.0, 0.45, 0.2) * tw * 0.07 * (1.0 - cloud * 0.4) * vis * uSunInt;
+  float tw = exp(-pow((ndl + 0.02) / 0.15, 2.0));
+  col += vec3(1.0, 0.45, 0.2) * tw * 0.035 * (1.0 - cloud * 0.4) * vis * uSunInt;
 
   // night lights (hidden under cloud, stronger in the dark)
   float dark = 1.0 - smoothstep(-0.12, 0.05, ndl);

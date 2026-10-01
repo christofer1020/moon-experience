@@ -108,13 +108,14 @@ export class EarthBody {
     }
   }
 
-  update(o: { quat: Quaternion; sunDir: Vector3; moonPos: Vector3; cam: PerspectiveCamera; time: number; sunAng: number; sunInt: number; visible: boolean }) {
+  update(o: { quat: Quaternion; sunDir: Vector3; moonPos: Vector3; cam: PerspectiveCamera; time: number; sunAng: number; sunInt: number; visible: boolean; occluderScale?: number }) {
     this.group.visible = o.visible
     if (!o.visible) return
     this.mesh.quaternion.copy(o.quat)
     const u = this.mesh.material.uniforms
     u.uSunDir.value.copy(o.sunDir)
     u.uMoonPos.value.copy(o.moonPos)
+    u.uMoonR.value = o.occluderScale ?? 1
     u.uCamPos.value.copy(o.cam.position)
     u.uTime.value = o.time
     u.uSunAng.value = o.sunAng
@@ -122,6 +123,7 @@ export class EarthBody {
     const s = this.shell.material.uniforms
     s.uSunDir.value.copy(o.sunDir)
     s.uMoonPos.value.copy(o.moonPos)
+    s.uMoonR.value = o.occluderScale ?? 1
     s.uCamPos.value.copy(o.cam.position)
     s.uSunAng.value = o.sunAng
     s.uSunInt.value = o.sunInt

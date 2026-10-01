@@ -18,12 +18,17 @@ export interface ResolvedTarget {
   up: Vector3
   /** true when the view is attached to the Moon's body frame (surface / ground cameras) */
   anchored: boolean
+  /** how the pivot rides on the Moon's orbital motion for views that are not body-anchored */
+  rides: 'none' | 'moon' | 'mid' | 'earthview'
 }
 
 const DEG = Math.PI / 180
 const tmpA = new Vector3()
 const tmpB = new Vector3()
 const tmpQ = new Quaternion()
+const tmpRide = new Vector3()
+const tmpRideA = new Vector3()
+const tmpRideB = new Vector3()
 
 /** north tangent at a selenographic point (body frame) */
 function northTangent(lon: number, lat: number, out: Vector3): Vector3 {
@@ -45,6 +50,7 @@ export function resolveTarget(
   out: ResolvedTarget,
 ): ResolvedTarget {
   out.anchored = t.kind === 'surface' || t.kind === 'ground'
+  out.rides = t.kind === 'earthview' ? 'earthview' : t.kind === 'system' && t.follow ? t.follow : 'none'
   if (t.kind === 'earthview') {
     out.dir.copy(moonPos).multiplyScalar(-1).normalize()
     out.pivot.copy(moonPos)
@@ -91,7 +97,7 @@ export function resolveTarget(
   const N = northTangent(lon, lat, new Vector3())
   const E = eastTangent(lon, new Vector3())
   const h = (t.heading + user.a * (180 / Math.PI) * 0.35) * DEG
-  const p = Math.max(-0.5, Math.min(0.9, t.pitch * DEG + user.e * 0.35))
+  const p = Math.max(-1.45, Math.min(0.9, t.pitch * DEG + Math.max(-0.5, Math.min(0.5, user.e * 0.35))))
   const horiz = N.multiplyScalar(Math.cos(h)).addScaledVector(E, Math.sin(h))
   const fwd = horiz.multiplyScalar(Math.cos(p)).addScaledVector(n, Math.sin(p))
   const cam = n.clone().multiplyScalar(1 + t.alt)
@@ -141,7 +147,7 @@ export class Rig {
   zoom = 1
   private zoomS = 1
   initialised = false
-  private target: ResolvedTarget = { pivot: new Vector3(), dir: new Vector3(0, 0, 1), dist: 5, up: new Vector3(0, 1, 0), anchored: true }
+  private target: ResolvedTarget = { pivot: new Vector3(), dir: new Vector3(0, 0, 1), dist: 5, up: new Vector3(0, 1, 0), anchored: true, rides: 'none' }
   speed = 1
 
   snap(t: ResolvedTarget) {
@@ -172,6 +178,21 @@ export class Rig {
       this.pivot.sub(moonDelta.prevPos).applyQuaternion(moonDelta.dq).add(moonDelta.pos)
       this.dir.applyQuaternion(moonDelta.dq)
       this.up.applyQuaternion(moonDelta.dq)
+    } else if (moonDelta && t.rides !== 'none') {
+      // views that ride the Moon's orbit (system focus on the Moon / mid-point, Earth-side view): carry the camera with
+      // the orbital motion so only the residual is eased, otherwise a fast-moving Moon outruns the camera
+      const d = tmpRide.copy(moonDelta.pos).sub(moonDelta.prevPos)
+      if (t.rides === 'moon' || t.rides === 'earthview') this.pivot.add(d)
+      else this.pivot.addScaledVector(d, 0.5)
+      if (t.rides === 'earthview' && moonDelta.prevPos.lengthSq() > 1e-6 && moonDelta.pos.lengthSq() > 1e-6) {
+        const a = tmpRideA.copy(moonDelta.prevPos).normalize().multiplyScalar(-1)
+        const b = tmpRideB.copy(moonDelta.pos).normalize().multiplyScalar(-1)
+        if (a.dot(b) < 0.999999) {
+          tmpQ.setFromUnitVectors(a, b)
+          this.dir.applyQuaternion(tmpQ)
+          this.up.applyQuaternion(tmpQ)
+        }
+      }
     }
     const s = this.speed
     const tau = tune.tau / s

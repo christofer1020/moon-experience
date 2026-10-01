@@ -24,7 +24,9 @@ export const IconRead = (p: SVGProps<SVGSVGElement>) => (
 )
 export const IconSoundOn = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}>
-    <path d="M4 10v4h3.5L12 18V6L7.5 10zM15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.4 7.4 0 0 1 0 10.4" />
+    <path d="M4 10v4h3.5L12 18V6L7.5 10z" />
+    <path className="snd-w1" d="M15.5 9.2a4 4 0 0 1 0 5.6" />
+    <path className="snd-w2" d="M18 6.8a7.4 7.4 0 0 1 0 10.4" />
   </svg>
 )
 export const IconSoundOff = (p: SVGProps<SVGSVGElement>) => (

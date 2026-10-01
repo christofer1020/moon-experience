@@ -32,6 +32,7 @@ const coneVert = /* glsl */ `
 out vec3 vN;
 out vec3 vV;
 out float vT;
+out vec3 vWP;
 uniform float uR0;
 uniform float uR1;
 uniform float uLen;
@@ -44,6 +45,7 @@ void main() {
   vN = normalize(mat3(modelMatrix) * radial);
   vV = normalize(cameraPosition - wp.xyz);
   vT = t;
+  vWP = wp.xyz;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `
@@ -52,13 +54,21 @@ precision highp float;
 in vec3 vN;
 in vec3 vV;
 in float vT;
+in vec3 vWP;
 uniform vec3 uColor;
 uniform float uAlpha;
 uniform float uFade;
+uniform vec3 uCenter;
+uniform vec3 uAxis;
+uniform float uSpan;
 out vec4 fragColor;
 void main() {
   float edge = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.3);
   float a = uAlpha * (0.22 + 0.78 * edge) * mix(1.0, 1.0 - 0.85 * vT, uFade);
+  if (uSpan > 0.0) {
+    float ax = dot(vWP - uCenter, uAxis) / uSpan;
+    a *= exp(-ax * ax);
+  }
   fragColor = vec4(uColor * a, a);
 }
 `
@@ -70,6 +80,9 @@ interface ConeUniforms {
   uAlpha: { value: number }
   uFade: { value: number }
   uColor: { value: Vector3 }
+  uCenter: { value: Vector3 }
+  uAxis: { value: Vector3 }
+  uSpan: { value: number }
 }
 
 function makeCone(color: number, additive: boolean) {
@@ -80,6 +93,9 @@ function makeCone(color: number, additive: boolean) {
     uR0: { value: 1 },
     uR1: { value: 1 },
     uLen: { value: 1 },
+    uCenter: { value: new Vector3() },
+    uAxis: { value: new Vector3(0, 1, 0) },
+    uSpan: { value: 0 },
   }
   const mat = new ShaderMaterial({
     glslVersion: GLSL3,
@@ -128,7 +144,7 @@ export class SystemOverlay {
   private fixedArrow: Group
   private pulse: Mesh
   private pulseGlow: Mesh
-  private tide: Mesh
+  private tide: LineSegments
   private termRing: LineLoop
   readonly nodePositions: Vector3[] = [new Vector3(), new Vector3()]
   /** radius of the orbit in world units for the current scale (used for framing / notes) */
@@ -209,8 +225,15 @@ export class SystemOverlay {
     this.pulseGlow = new Mesh(new SphereGeometry(1.4, 16, 12), new MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.25, blending: AdditiveBlending, depthWrite: false }))
     this.pulseGlow.visible = false
 
-    const tideG = new SphereGeometry(1, 48, 24)
-    this.tide = new Mesh(tideG, new MeshBasicMaterial({ color: 0x5f93d8, transparent: true, opacity: 0, depthWrite: false, wireframe: true }))
+    // graticule of the (exaggerated) tidal ellipsoid: poles on the Earth–Moon axis (local +X), so the bulge reads as a lemon
+    const gp: number[] = []
+    const seg = (a: number[], b: number[]) => gp.push(a[0], a[1], a[2], b[0], b[1], b[2])
+    const at = (th: number, ph: number) => [Math.cos(th), Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph)]
+    for (let k = 0; k < 24; k++) for (let i = 0; i < 48; i++) seg(at((i / 48) * Math.PI, (k / 24) * Math.PI * 2), at(((i + 1) / 48) * Math.PI, (k / 24) * Math.PI * 2))
+    for (let j = 1; j < 12; j++) for (let i = 0; i < 96; i++) seg(at((j / 12) * Math.PI, (i / 96) * Math.PI * 2), at((j / 12) * Math.PI, ((i + 1) / 96) * Math.PI * 2))
+    const tideG = new BufferGeometry()
+    tideG.setAttribute('position', new BufferAttribute(new Float32Array(gp), 3))
+    this.tide = new LineSegments(tideG, new LineBasicMaterial({ color: 0x7fa8e0, transparent: true, opacity: 0, depthWrite: false }))
     this.tide.visible = false
 
     const tp: number[] = []
@@ -355,7 +378,7 @@ export class SystemOverlay {
       const col = this.rays.geometry.attributes.color as BufferAttribute
       let n = 0
       for (let i = -4; i <= 4; i++) {
-        const off = side.clone().multiplyScalar((i / 4) * R * 0.78)
+        const off = side.clone().multiplyScalar((i / 4) * R * 0.5)
         const startP = sd.clone().multiplyScalar(R * 1.35).add(off)
         const endP = startP.clone().addScaledVector(sd, -len)
         pos.setXYZ(n * 2, startP.x, startP.y, startP.z)
@@ -366,7 +389,7 @@ export class SystemOverlay {
       }
       pos.needsUpdate = true
       col.needsUpdate = true
-      this.raysMat.opacity = f.sunRay * 0.9
+      this.raysMat.opacity = f.sunRay * 0.55
       void up
     }
 
@@ -384,6 +407,7 @@ export class SystemOverlay {
       u.uLen.value = len
       u.uAlpha.value = alpha
       u.uFade.value = fade
+      u.uSpan.value = 0
     }
     // Earth: umbra apex at L = R_e · D / (R_s − R_e); penumbra widens by (R_s + R_e)/D per unit length
     const eUmbraLen = (EARTH_R * D_SUN) / (R_SUN - EARTH_R)
@@ -394,6 +418,15 @@ export class SystemOverlay {
       const L = Math.max(moonW.length() * 1.3, 90)
       const spread = (R_SUN + EARTH_R) / D_SUN
       orient(this.earthPenumbra, new Vector3(0, 0, 0), EARTH_R, EARTH_R + L * spread, L, 0.34 * f.umbra, 0)
+      if (f.umbraSpan > 0) {
+        const c = anti.clone().multiplyScalar(Math.max(moonW.dot(anti), 0))
+        for (const m of [this.earthUmbra, this.earthPenumbra]) {
+          const u = cu(m)
+          u.uCenter.value.copy(c)
+          u.uAxis.value.copy(anti)
+          u.uSpan.value = f.umbraSpan
+        }
+      }
     }
     // Moon: umbra apex at L = R_m · D / (R_s − R_m) (≈ 215 Moon radii: just short of, or reaching, Earth)
     const mUmbraLen = (1 * D_SUN) / (R_SUN - 1)
@@ -411,7 +444,7 @@ export class SystemOverlay {
     this.spinArrow.visible = showSpin
     this.fixedArrow.visible = showSpin && vis(f.noRotationGhost)
     if (showSpin) {
-      const len = Math.max(2.4, this.orbitRadius * 0.12)
+      const len = Math.max(3.2, this.orbitRadius * 0.16)
       // amber arrow: from the Moon's centre through its near-side sub-Earth meridian (body +X)
       const dirBody = new Vector3(1, 0, 0).applyQuaternion(obs.moonQuat)
       this.spinArrow.position.copy(moonW).addScaledVector(dirBody, 1.0)
@@ -446,7 +479,7 @@ export class SystemOverlay {
       this.tide.position.set(0, 0, 0)
       this.tide.quaternion.setFromUnitVectors(new Vector3(1, 0, 0), dirE)
       this.tide.scale.set(EARTH_R * 1.07, EARTH_R * 1.0, EARTH_R * 1.0)
-      ;(this.tide.material as MeshBasicMaterial).opacity = 0.35 * tideOn
+      ;(this.tide.material as LineBasicMaterial).opacity = 0.42 * tideOn
     }
 
     // ---------------------------------------------------------------- terminator guide

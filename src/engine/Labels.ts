@@ -21,6 +21,8 @@ export interface LabelItem {
   force?: boolean
   /** dim variant */
   dim?: boolean
+  /** keep visible even where the surface is in shadow (polar shadowed regions) */
+  unlit?: boolean
 }
 
 export interface NoteItem {
@@ -71,7 +73,7 @@ const CANDIDATES: [number, number][] = [
   [-1.7, 0],
 ]
 
-function tracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number, align: 'left' | 'right' | 'center' = 'left') {
+function tracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number, align: 'left' | 'right' | 'center' = 'left', haloOn = true) {
   let total = 0
   const widths: number[] = []
   for (const ch of text) {
@@ -82,10 +84,19 @@ function tracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: numb
   total -= tracking
   let cx = align === 'left' ? x : align === 'right' ? x - total : x - total / 2
   let i = 0
+  // a thin dark halo keeps labels legible over bright terrain (full Moon, snow, clouds) without a backing plate
+  const halo = ctx.lineWidth
+  const stroke = ctx.strokeStyle
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 2.4
+  ctx.strokeStyle = 'rgba(4,5,7,0.38)'
   for (const ch of text) {
+    if (haloOn) ctx.strokeText(ch, cx, y)
     ctx.fillText(ch, cx, y)
     cx += widths[i++]
   }
+  ctx.lineWidth = halo
+  ctx.strokeStyle = stroke
   return total
 }
 
@@ -109,6 +120,8 @@ export class LabelLayer {
   private tmpV = new Vector3()
   private dpr = 1
   private time = 0
+  private frame = 0
+  private excl: [number, number, number, number][] = []
   /** global opacity (for transitions) */
   opacity = 1
 
@@ -154,7 +167,15 @@ export class LabelLayer {
     ctx.globalAlpha = this.opacity
     ctx.textBaseline = 'alphabetic'
 
-    const placed: [number, number, number, number][] = []
+    // keep labels out from under the story text and tools: refreshed a few times a second
+    if (this.frame++ % 12 === 0) {
+      this.excl = []
+      document.querySelectorAll('.tools > *, .stage .beat.in, .topbar, .hud, .inset-cap, .zoomctl').forEach((el) => {
+        const r = el.getBoundingClientRect()
+        if (r.width > 4 && r.height > 4) this.excl.push([r.left - 6, r.top - 6, r.right + 6, r.bottom + 6])
+      })
+    }
+    const placed: [number, number, number, number][] = this.excl.slice()
     const overlaps = (r: [number, number, number, number]) => {
       for (const p of placed) if (r[0] < p[2] + 6 && r[2] > p[0] - 6 && r[1] < p[3] + 4 && r[3] > p[1] - 4) return true
       return false
@@ -181,7 +202,7 @@ export class LabelLayer {
         const sb = this.obs.moon.uniforms.uSunBody.value as Vector3
         const lit = lonLatToVec(it.lon, it.lat, this.tmpV).dot(sb)
         const l01 = Math.min(1, Math.max(0, (lit + 0.04) / 0.22))
-        target *= it.active || it.hover ? 0.4 + 0.6 * l01 : l01 * l01
+        target *= it.unlit ? 0.55 + 0.45 * l01 : it.active || it.hover ? 0.4 + 0.6 * l01 : l01 * l01
       }
       const k = 1 - Math.exp(-dt * (target > st.alpha ? 5 : 8))
       st.alpha += (target - st.alpha) * k
@@ -262,7 +283,7 @@ export class LabelLayer {
       const ty = chosen[1] + (big ? 18 : 10)
       tracked(ctx, label, tx, ty, tracking)
       ctx.shadowBlur = 3
-      tracked(ctx, label, tx, ty, tracking)
+      tracked(ctx, label, tx, ty, tracking, 'left', false)
       if (big && it.sub) {
         ctx.font = '400 10px "JetBrains Mono", ui-monospace, monospace'
         ctx.fillStyle = `rgba(${AMBER},${0.95 * a})`

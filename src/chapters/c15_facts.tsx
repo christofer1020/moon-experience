@@ -73,7 +73,7 @@ export const facts: Chapter = {
     p.starGain = 0.3
     p.date = (c.s.tool.calendarDate ?? Date.now()) as number
     p.date = Date.now()
-    p.cam = { kind: 'surface', lon: 0, lat: 10, dist: c.dist(4.3) }
+    p.cam = { kind: 'surface', lon: 0, lat: 10, dist: c.dist(6.2) }
     p.idleSpin = 3
     p.topo = beat === 1 ? 0.85 : 0
     c.compose('left', 0.9)

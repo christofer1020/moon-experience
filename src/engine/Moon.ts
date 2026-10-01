@@ -1,6 +1,7 @@
 import {
   Color,
   DataTexture,
+  DataUtils,
   Group,
   GLSL3,
   Mesh,
@@ -110,6 +111,14 @@ export class MoonBody {
     this.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy())
     const [ws, hs] = quality.moonSegments
     const geo = new SphereGeometry(1, ws, hs)
+    // the duplicated seam vertices (lon 180°) differ by ~1e-16 in z, which leaves single-pixel cracks after displacement:
+    // snap them so both copies are bit-identical
+    const pos = geo.attributes.position
+    for (let i = 0; i < pos.count; i++) {
+      if (Math.abs(pos.getZ(i)) < 1e-6) pos.setZ(i, 0)
+      if (Math.abs(pos.getX(i)) < 1e-6) pos.setX(i, 0)
+    }
+    pos.needsUpdate = true
     geo.deleteAttribute('normal')
     geo.deleteAttribute('uv')
     geo.computeBoundingSphere()
@@ -156,6 +165,7 @@ export class MoonBody {
         uRingP: { value: ringP },
         uImpact: { value: new Vector4(1, 0, 0, 0.05) },
         uImpactState: { value: new Vector4(0, 0, 0.08, 0) },
+        uImpactBase: { value: 0 },
         uPulse: { value: new Vector4(1, 0, 0, 0) },
         uTopoRange: { value: new Vector2(-9000, 10800) },
         uWinC0: { value: null },
@@ -422,6 +432,30 @@ export class MoonBody {
       this.maskHoverKey = key
       fillMask(this.maskHover, this.labels, ids ? new Set(ids) : null)
     }
+  }
+
+  /** elevation (fraction of R) of the height model at a selenographic position (nearest sample) */
+  heightAt(lonDeg: number, latDeg: number): number {
+    const tex = this.uniforms.uHeight.value as DataTexture
+    const img = tex.image as { data?: Uint16Array; width: number; height: number }
+    if (!img.data || img.width < 8) return 0
+    const x = Math.floor((((lonDeg + 180) / 360) % 1 + 1) % 1 * img.width) % img.width
+    const y = Math.min(img.height - 1, Math.max(0, Math.floor(((90 - latDeg) / 180) * img.height)))
+    return DataUtils.fromHalfFloat(img.data[y * img.width + x])
+  }
+
+  /** mean elevation on a ring around a site — the "ground level" the impact replay flattens a crater to */
+  ringHeight(lonDeg: number, latDeg: number, angRadius: number): number {
+    let sum = 0
+    const n = 12
+    const dLat = (angRadius * 180) / Math.PI
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2
+      const la = Math.max(-89, Math.min(89, latDeg + Math.sin(a) * dLat))
+      const lo = lonDeg + (Math.cos(a) * dLat) / Math.max(0.2, Math.cos((la * Math.PI) / 180))
+      sum += this.heightAt(lo, la)
+    }
+    return sum / n
   }
 
   /** mare id under a selenographic position */

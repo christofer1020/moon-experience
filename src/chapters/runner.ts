@@ -43,7 +43,7 @@ export function makeCtx(obs: Observatory, p: SceneParams, dt: number, chapter: C
     p,
     obs,
     dt,
-    now: performance.now() / 1000,
+    now: obs.time,
     beat,
     nBeats,
     t,
@@ -57,12 +57,18 @@ export function makeCtx(obs: Observatory, p: SceneParams, dt: number, chapter: C
       if (L.mobile || L.portrait) {
         p.shift = [0, side === 'center' ? 0.1 * amount : side === 'top' ? 0.3 * amount : 0.2 * amount]
       } else {
-        p.shift = [side === 'right' ? 0.22 * amount : side === 'left' ? -0.22 * amount : 0, side === 'top' ? 0.1 * amount : 0]
+        // chapters with a tools column on the right keep the Moon nearer the centre so the column stays clear of the disc
+        const rightK = chapter.Tools && !chapter.wideTools && !chapter.bareTools ? 0.05 : 0.22
+        const lift = chapter.wideTools ? 0.13 : 0
+        p.shift = [side === 'right' ? rightK * amount : side === 'left' ? -0.22 * amount : 0, (side === 'top' ? 0.1 * amount : 0) + lift * amount]
       }
       if (L.mobile || L.portrait) p.fov = Math.max(p.fov, 36)
     },
     dist(d) {
-      return 1 + (d - 1) * k
+      let v = 1 + (d - 1) * k
+      // whole-disc views on desktop: keep the Moon to ~70 % of the height so it sits between the text and tools columns
+      if (!(L.mobile || L.portrait) && d >= 3.2 && d < 12 && chapter.Tools && !chapter.bareTools) v = Math.max(v, chapter.wideTools ? 6.2 : 5.7)
+      return v
     },
     landmarks(ids, opts = {}) {
       const rd = obs.rig.dist
@@ -85,6 +91,7 @@ export function makeCtx(obs: Observatory, p: SceneParams, dt: number, chapter: C
           hover: l.id === hov,
           marker: l.kind === 'crater' ? 'ring' : 'dot',
           dim: opts.dim,
+          unlit: opts.unlit,
         })
       }
     },

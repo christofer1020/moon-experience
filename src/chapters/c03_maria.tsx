@@ -139,15 +139,15 @@ export const maria: Chapter = {
     if (target) {
       view = { lon: target.lon, lat: target.lat, dist: mareDist(target.diameterKm) }
       p.maskSel = [target.id]
-      p.date = dateSubsolar(target.lon + 55)
+      p.date = dateSubsolar(target.lon + 64)
     } else if (beat === 2) {
       view = { lon: 176, lat: 10, dist: 4.8 }
       p.maskSel = MARIA.map((m) => m.id)
-      p.date = dateSubsolar(178)
+      p.date = dateSubsolar(128)
     } else {
       view = { lon: -10, lat: 14, dist: 4.8 }
       p.maskSel = MARIA.map((m) => m.id)
-      p.date = dateSubsolar(88)
+      p.date = dateSubsolar(44)
       p.idleSpin = 0.3
     }
     p.cam = { kind: 'surface', lon: view.lon, lat: view.lat, dist: c.dist(view.dist) }
