@@ -2,45 +2,29 @@
 
 An interactive lunar observatory where **the Moon is the interface**. One persistent, real-data Moon stays on screen from the first frame to the last; the story, the tools, the index and the maps are all drawn *on* it. Everything is made in code (WebGL/GLSL, WebAudio, DOM) — no generated imagery, video or audio.
 
-## Open it (private repository)
+## Run it
 
 The site is a static web app: it needs a small local web server, not just a double-click (browsers block the Moon's data files when a page is opened from `file://`). Pick one way.
 
-### A. On your computer
+### On your computer
 
 1. Install **Git** and **Node.js 20.19+ or 22** (check with `node -v`).
-2. **Clone the private repository.** You must be signed in to GitHub as a user with access. Any one of these works:
-   * GitHub CLI: `gh auth login`, then `gh repo clone christofer1020/moon-experience`
-   * HTTPS: `git clone https://github.com/christofer1020/moon-experience.git`. When asked, use your GitHub username and a **personal access token** as the password (GitHub → Settings → Developer settings → Personal access tokens → fine-grained, repository access to this repo, *Contents: read*).
-   * SSH (if you have a key on GitHub): `git clone git@github.com:christofer1020/moon-experience.git`
-3. Go into the folder and switch to the branch the site was built on (until it is merged to `main`):
+2. Clone, install and open:
    ```
+   git clone https://github.com/christofer1020/moon-experience.git
    cd moon-experience
-   git checkout claude/moon-3d-observatory-tyjr11
-   ```
-4. Install and open:
-   ```
    npm install
    npm start          # builds, then opens http://127.0.0.1:4173
    ```
    For development with live reload use `npm run dev` instead (http://localhost:5173).
 
-### B. In GitHub Codespaces (nothing to install)
+### In GitHub Codespaces (nothing to install)
 
-On the repository page: **Code → Codespaces → Create codespace on `claude/moon-3d-observatory-tyjr11`**. It installs everything and starts the dev server; the forwarded port 5173 opens in your browser and stays **private to you**. (The 3D is drawn by *your* browser's GPU, not by the Codespace.) This path was set up but not tested.
+On the repository page: **Code → Codespaces → Create codespace on `main`**. It installs everything and starts the dev server; the forwarded port 5173 opens in your browser. (The 3D is drawn by *your* browser's GPU, not by the Codespace.) This path was set up but not tested.
 
-### C. Build once, serve any way you like
+### Build once, serve any way you like
 
 `npm run build` writes a self-contained site to `dist/` (relative paths, ≈ 38 MB). Serve that folder with any static server, for example `python3 -m http.server 8080 -d dist`, then open http://localhost:8080.
-
-### Keeping it private
-
-* Do not turn on GitHub Pages for a private repository unless you mean to publish it: Pages sites are public by default (private Pages exist only on GitHub Enterprise Cloud).
-* Use a **private** host if you share the built site (an access-controlled static host, or the `dist/` folder zipped).
-
-### Getting the branch into `main`
-
-Nothing has been merged for you. When you are happy: open a pull request on GitHub, or locally `git checkout main && git merge claude/moon-3d-observatory-tyjr11 && git push`.
 
 ### If something looks wrong
 
