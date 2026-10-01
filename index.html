@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050608" />
+    <meta name="color-scheme" content="dark" />
+    <title>SELENE — An Atlas of the Moon</title>
+    <meta
+      name="description"
+      content="SELENE is an interactive lunar observatory. Built on real NASA LRO data and real ephemerides, the Moon itself is the interface: rotate it, inspect it, and learn its phases, eclipses, craters and the people and machines that reached it."
+    />
+    <meta property="og:title" content="SELENE — An Atlas of the Moon" />
+    <meta property="og:description" content="The Moon is the interface. An interactive 3D lunar observatory built on NASA LRO / LOLA data." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <main style="font-family: Georgia, serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; color: #ddd; background: #050608">
+        <h1>SELENE — An Atlas of the Moon</h1>
+        <p>
+          This is an interactive 3D lunar observatory and requires JavaScript and WebGL. The Moon is 3,474.8 km across, about a
+          quarter of Earth's diameter, and orbits at an average of 384,400 km. It always shows the same face to Earth.
+        </p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

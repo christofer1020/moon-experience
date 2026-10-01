@@ -1,0 +1,186 @@
+{
+ "threshold": 0.4451289474964142,
+ "labelledAreaKm2": 8131000.0,
+ "maria": [
+  {
+   "id": 1,
+   "key": "imbrium",
+   "name": "Mare Imbrium",
+   "lon": -14.909,
+   "lat": 34.724,
+   "diameterKm": 1145.53,
+   "areaKm2": 703000.0
+  },
+  {
+   "id": 2,
+   "key": "serenitatis",
+   "name": "Mare Serenitatis",
+   "lon": 18.36,
+   "lat": 27.288,
+   "diameterKm": 674.28,
+   "areaKm2": 383100.0
+  },
+  {
+   "id": 3,
+   "key": "tranquillitatis",
+   "name": "Mare Tranquillitatis",
+   "lon": 30.835,
+   "lat": 8.349,
+   "diameterKm": 875.75,
+   "areaKm2": 595800.0
+  },
+  {
+   "id": 4,
+   "key": "crisium",
+   "name": "Mare Crisium",
+   "lon": 59.104,
+   "lat": 16.177,
+   "diameterKm": 555.92,
+   "areaKm2": 208500.0
+  },
+  {
+   "id": 5,
+   "key": "fecunditatis",
+   "name": "Mare Fecunditatis",
+   "lon": 53.669,
+   "lat": -7.835,
+   "diameterKm": 840.35,
+   "areaKm2": 551000.0
+  },
+  {
+   "id": 6,
+   "key": "nectaris",
+   "name": "Mare Nectaris",
+   "lon": 34.602,
+   "lat": -15.185,
+   "diameterKm": 339.39,
+   "areaKm2": 109900.0
+  },
+  {
+   "id": 7,
+   "key": "nubium",
+   "name": "Mare Nubium",
+   "lon": -17.287,
+   "lat": -20.589,
+   "diameterKm": 714.5,
+   "areaKm2": 401400.0
+  },
+  {
+   "id": 8,
+   "key": "humorum",
+   "name": "Mare Humorum",
+   "lon": -38.572,
+   "lat": -24.479,
+   "diameterKm": 419.67,
+   "areaKm2": 143500.0
+  },
+  {
+   "id": 9,
+   "key": "frigoris",
+   "name": "Mare Frigoris",
+   "lon": -0.006,
+   "lat": 57.592,
+   "diameterKm": 1446.41,
+   "areaKm2": 830500.0
+  },
+  {
+   "id": 10,
+   "key": "vaporum",
+   "name": "Mare Vaporum",
+   "lon": 4.09,
+   "lat": 13.2,
+   "diameterKm": 242.46,
+   "areaKm2": 72400.0
+  },
+  {
+   "id": 11,
+   "key": "cognitum",
+   "name": "Mare Cognitum",
+   "lon": -22.314,
+   "lat": -10.531,
+   "diameterKm": 350.01,
+   "areaKm2": 78500.0
+  },
+  {
+   "id": 12,
+   "key": "insularum",
+   "name": "Mare Insularum",
+   "lon": -30.64,
+   "lat": 7.792,
+   "diameterKm": 511.93,
+   "areaKm2": 97500.0
+  },
+  {
+   "id": 13,
+   "key": "procellarum",
+   "name": "Oceanus Procellarum",
+   "lon": -56.677,
+   "lat": 20.671,
+   "diameterKm": 2592.24,
+   "areaKm2": 3147600.0
+  },
+  {
+   "id": 14,
+   "key": "orientale",
+   "name": "Mare Orientale",
+   "lon": -94.67,
+   "lat": -19.866,
+   "diameterKm": 294.16,
+   "areaKm2": 46300.0
+  },
+  {
+   "id": 15,
+   "key": "moscoviense",
+   "name": "Mare Moscoviense",
+   "lon": 148.123,
+   "lat": 27.282,
+   "diameterKm": 275.57,
+   "areaKm2": 55600.0
+  },
+  {
+   "id": 16,
+   "key": "smythii",
+   "name": "Mare Smythii",
+   "lon": 87.05,
+   "lat": -1.709,
+   "diameterKm": 373.97,
+   "areaKm2": 144700.0
+  },
+  {
+   "id": 17,
+   "key": "marginis",
+   "name": "Mare Marginis",
+   "lon": 86.515,
+   "lat": 12.702,
+   "diameterKm": 357.63,
+   "areaKm2": 120600.0
+  },
+  {
+   "id": 18,
+   "key": "ingenii",
+   "name": "Mare Ingenii",
+   "lon": 164.827,
+   "lat": -33.246,
+   "diameterKm": 282.2,
+   "areaKm2": 77500.0
+  },
+  {
+   "id": 19,
+   "key": "australe",
+   "name": "Mare Australe",
+   "lon": 91.985,
+   "lat": -47.771,
+   "diameterKm": 996.84,
+   "areaKm2": 346700.0
+  },
+  {
+   "id": 20,
+   "key": "humboldtianum",
+   "name": "Mare Humboldtianum",
+   "lon": 81.543,
+   "lat": 56.922,
+   "diameterKm": 230.78,
+   "areaKm2": 17300.0
+  }
+ ]
+}

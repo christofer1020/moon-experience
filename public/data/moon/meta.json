@@ -1,0 +1,44 @@
+{
+  "radiusKm": 1737.4,
+  "height": {
+    "encoding": "RG16 lossless WebP",
+    "bias": 2500
+  },
+  "relief": {
+    "encoding": "sign*sqrt(|s|/smax) -> 8bit",
+    "smax": 0.6,
+    "channels": [
+      "east",
+      "north",
+      "roughness"
+    ],
+    "roughnessMax": 0.35
+  },
+  "source": "NASA SVS 4720 CGI Moon Kit (LROC / LOLA)",
+  "heightBytes": {
+    "8ppd": {
+      "bytes": 3805524,
+      "unitMeters": 4.0,
+      "size": [
+        2880,
+        1440
+      ]
+    },
+    "4ppd": {
+      "bytes": 919706,
+      "unitMeters": 8.0,
+      "size": [
+        1440,
+        720
+      ]
+    }
+  },
+  "heightRange": [
+    -8981.5,
+    10685.5
+  ],
+  "reliefBytes": {
+    "4k": 6434493,
+    "2k": 1641795
+  }
+}
