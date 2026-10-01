@@ -23,7 +23,7 @@ function FactsPanel() {
       <section className="facts-group">
         <h3>Sources &amp; credits</h3>
         <p className="note" style={{ marginBottom: 12 }}>
-          Imagery and elevation: NASA LRO (LROC and LOLA teams), via the NASA SVS “CGI Moon Kit” by Ernie Wright — public domain, optimised for aesthetics rather than science. Positions and phases: astronomy-engine and the IAU lunar rotation model. Stars: HYG database (CC BY-SA 4.0). Earth: NASA Blue Marble / Black Marble.
+          Imagery and elevation: NASA LRO (LROC and LOLA teams), via the NASA SVS “CGI Moon Kit” by Ernie Wright — public domain, optimised for aesthetics rather than science — and, for close-ups, the LRO WAC mosaic from NASA Trek. Positions and phases: astronomy-engine and the IAU lunar rotation model. Stars: HYG database (CC BY-SA 4.0). Earth: NASA Blue Marble / Black Marble.
         </p>
         <ul>
           {SOURCES.map((s) => (

@@ -180,7 +180,6 @@ export const LANDMARKS: Landmark[] = [
       ['Age', '≈ 3.7–3.8 billion years'],
       ['Lava fill', 'thin — probably under 1 km'],
     ],
-    frame: 2.2,
   },
   {
     id: 'spa',
@@ -198,7 +197,6 @@ export const LANDMARKS: Landmark[] = [
       ['Age', 'pre-Nectarian; one proposed zircon age ≈ 4.34 billion years'],
       ['Samples', 'Chang’e 6 returned the first far-side samples from here (2024)'],
     ],
-    frame: 3.2,
   },
   /* ------------------------------------------------------------ mountains & valleys */
   { id: 'apennines', name: 'Montes Apenninus', kind: 'mountain', lon: 0.025, lat: 19.871, diameterKm: 599.67, rank: 2, summary: 'The great curved rim of the Imbrium basin; peaks reach about 5 km above the plains. Apollo 15 landed at its foot.' },

@@ -149,7 +149,7 @@ export const sides: Chapter = {
       const dM = moonW.length()
       const fovI = (2 * Math.atan(1 / (0.8 * dM)) * 180) / Math.PI
       const m = c.layout.mobile || c.layout.portrait
-      p.inset = { from: new Vector3(0, 0, 0), at: moonW.clone(), fov: fovI, up: new Vector3(0, 1, 0), x: m ? 0.8 : 0.85, y: m ? 0.8 : 0.72, r: m ? 0.09 : 0.14, hideEarth: true }
+      p.inset = { from: new Vector3(0, 0, 0), at: moonW.clone(), fov: fovI, up: new Vector3(0, 1, 0), x: m ? 0.22 : 0.85, y: m ? 0.79 : 0.72, r: m ? 0.1 : 0.14, hideEarth: true }
       return
     }
     if (beat === 2) {

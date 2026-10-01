@@ -55,7 +55,7 @@ export function makeCtx(obs: Observatory, p: SceneParams, dt: number, chapter: C
     notes: notesOut,
     compose(side, amount = 1) {
       if (L.mobile || L.portrait) {
-        p.shift = [0, side === 'center' ? 0.1 * amount : side === 'top' ? 0.3 * amount : 0.2 * amount]
+        p.shift = [0, side === 'center' ? 0.16 * amount : side === 'top' ? 0.34 * amount : 0.3 * amount]
       } else {
         // chapters with a tools column on the right keep the Moon nearer the centre so the column stays clear of the disc
         const rightK = chapter.Tools && !chapter.wideTools && !chapter.bareTools ? 0.05 : 0.22
@@ -178,6 +178,12 @@ export function createDriver(obs: Observatory, labels: LabelLayer, chapters: Cha
       ctx.bt = 0
     }
     ch.scene(ctx)
+    if (s.reducedMotion) {
+      // no idle drift, camera moves arrive quickly, date changes snap instead of sweeping
+      p.idleSpin = 0
+      p.camSpeed = Math.max(p.camSpeed, 2.6)
+      p.dateTau = Math.min(p.dateTau, 0.1)
+    }
     // UI toggles that apply everywhere
     if (s.tool.grid) p.grid = Math.max(p.grid, 1)
     if (s.tool.topo) p.topo = Math.max(p.topo, 1)

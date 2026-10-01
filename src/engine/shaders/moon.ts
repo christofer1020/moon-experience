@@ -327,6 +327,8 @@ void main() {
   col += alb * copper * 0.075 * uSunInt * umbra * (0.45 + 0.55 * mue);
   col += alb * vec3(0.62, 0.74, 1.0) * uEarthshine * 0.011 * uSunInt * (0.25 + 0.75 * mue);
   col += alb * 0.0004; // starlight / zodiacal fill so the dark limb is never perfectly flat
+  // regolith bounce / scattered light: keeps shadowed ground from being a hard black where the Sun is up nearby
+  col += alb * sunC * 0.014 * smoothstep(-0.02, 0.35, pl) * vis;
 
   // impact visual
   col += vec3(1.0, 0.82, 0.55) * iFlash * 12.0;

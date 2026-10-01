@@ -136,22 +136,27 @@ export function ToolsPanel() {
   useEffect(() => {
     setOpen(!!selected)
   }, [selected, chapterIdx])
+  const sheet = mobile && open && !!ch.Tools && !ch.bareTools
+  useEffect(() => {
+    useStore.getState().set({ toolsSheet: sheet })
+    return () => useStore.getState().set({ toolsSheet: false })
+  }, [sheet])
   if (phase !== 'live' || !ch.Tools || indexOpen) return null
   const Tools = ch.Tools
   const wide = ch.wideTools
   if (ch.bareTools) return <Tools />
   if (mobile) {
     return (
-      <div className={`tools ${wide ? 'wide' : ''}`} data-ui style={{ bottom: open ? 'calc(46px + var(--safe-b))' : 'calc(46px + var(--safe-b))' }}>
-        <button className="btn" style={{ marginBottom: open ? 10 : 0 }} aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? 'Hide tools ▾' : 'Tools ▴'}
+      <>
+        <button className="tools-fab btn" data-ui aria-expanded={open} aria-label={open ? 'Close tools' : 'Open tools'} onClick={() => setOpen(!open)}>
+          {open ? 'Close ✕' : 'Tools'}
         </button>
         {open && (
-          <div style={{ background: 'linear-gradient(rgba(5,6,8,.9), rgba(5,6,8,.96))', padding: '12px 0 4px', borderTop: '1px solid var(--hair-2)' }}>
+          <div className="tools-sheet" data-ui role="region" aria-label="Tools">
             <Tools />
           </div>
         )}
-      </div>
+      </>
     )
   }
   return (

@@ -254,7 +254,7 @@ export const eclipses: Chapter = {
       c.note('moon', mw, 'Moon', undefined, { tone: 'moon', dx: 22, dy: 22 })
       const dist = mw.length()
       const fov = (2 * Math.atan(1 / (0.8 * dist)) * 180) / Math.PI
-      p.inset = { from: new Vector3(0, 0, 0), at: mw.clone(), fov, up: new Vector3(0, 1, 0), x: m ? 0.78 : 0.84, y: m ? 0.2 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
+      p.inset = { from: new Vector3(0, 0, 0), at: mw.clone(), fov, up: new Vector3(0, 1, 0), x: m ? 0.22 : 0.84, y: m ? 0.79 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
     } else {
       p.sys.moonShadow = 1
       // camera on the Moon side of Earth (direction fixed at the moment of greatest eclipse), Earth fills the view
@@ -276,7 +276,7 @@ export const eclipses: Chapter = {
       const date = new Date(obs.simDateMs)
       const obsPos = observerSystemPos(date, lat, lon)
       const sunDir = obs.sim.sunDir
-      p.inset = { from: obsPos, at: obsPos.clone().addScaledVector(sunDir, 100), fov: 2.6, up: new Vector3(0, 1, 0), x: m ? 0.78 : 0.84, y: m ? 0.2 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
+      p.inset = { from: obsPos, at: obsPos.clone().addScaledVector(sunDir, 100), fov: 2.6, up: new Vector3(0, 1, 0), x: m ? 0.22 : 0.84, y: m ? 0.79 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
       // corona only when the photosphere is (almost) fully hidden
       const toMoon = mw.clone().sub(obsPos)
       const dm = toMoon.length()

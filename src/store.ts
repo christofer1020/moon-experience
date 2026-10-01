@@ -54,6 +54,8 @@ export interface UIState {
   t: number
   mode: Mode
   indexOpen: boolean
+  /** phones: the tools bottom sheet is open (the story text steps aside) */
+  toolsSheet: boolean
   indexPreview: number | null
   readerOpen: boolean
   settingsOpen: boolean
@@ -82,6 +84,7 @@ export const useStore = create<UIState>((set) => ({
   t: 0,
   mode: 'guided',
   indexOpen: false,
+  toolsSheet: false,
   indexPreview: null,
   readerOpen: false,
   settingsOpen: false,

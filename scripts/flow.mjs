@@ -19,6 +19,10 @@ for (const st of steps.split('|')) {
   else if (cmd === 'live') { await page.waitForFunction(() => window.__selene && window.__selene.store.getState().phase === 'live', null, { timeout: 90000 }).catch(() => logs.push('no live')) }
   else if (cmd === 'ch') { await page.evaluate(([i, bb]) => window.__selene.scroll.goTo(+i, +(bb || 0), { immediate: true }), [a, b]); }
   else if (cmd === 'settle') { await page.evaluate(([n, d]) => window.__selene.obs.stepOnce(+d || 0.2, +n || 20), [a, b]) }
+  else if (cmd === 'drag') { const [, x0, y0, x1, y1] = st.split(':'); await page.mouse.move(+x0, +y0); await page.mouse.down(); for (let i = 1; i <= 12; i++) { await page.mouse.move(+x0 + ((+x1 - +x0) * i) / 12, +y0 + ((+y1 - +y0) * i) / 12); await page.waitForTimeout(30) } await page.mouse.up() }
+  else if (cmd === 'key') { await page.keyboard.press(st.slice(4)) }
+  else if (cmd === 'wheel') { await page.mouse.move(720, 450); await page.mouse.wheel(0, +a) }
+  else if (cmd === 'hover') { await page.mouse.move(+a, +b) }
   else if (cmd === 'wait') { await page.waitForTimeout(+a) }
   else if (cmd === 'shot') { await page.screenshot({ path: `${out}/${a}.png` }) }
   else if (cmd === 'eval') { const r = await page.evaluate(st.slice(5)); console.log('eval ->', JSON.stringify(r)) }

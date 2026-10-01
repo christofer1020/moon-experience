@@ -78,6 +78,12 @@ export class ScrollController {
   }
 
   /** scroll position of the start of a chapter (+ fraction) */
+  /** chapter entry hook; with reduced motion, nothing starts playing by itself */
+  private enter(ch: (typeof CHAPTERS)[number]) {
+    ch.onEnter?.(getState())
+    if (getState().reducedMotion) getState().setTool({ dayPlay: false, orbitPlay: false, eclipsePlay: false, playing: false })
+  }
+
   positionOf(chapterIdx: number, frac = 0): number {
     const i = Math.max(0, Math.min(CHAPTERS.length - 1, chapterIdx))
     const span = Math.max(1, this.heights[i] - this.vh)
@@ -93,7 +99,7 @@ export class ScrollController {
     const frac = (beat + 0.5) / n
     if (s.mode === 'free') {
       useStore.getState().set({ chapterIdx, beatIdx: beat, selected: null })
-      if (chapterIdx !== s.chapterIdx) ch.onEnter?.(getState())
+      if (chapterIdx !== s.chapterIdx) this.enter(ch)
       gsap.to(this.freeProgress, { t: frac, duration: 0.8, ease: 'power2.out', onUpdate: () => (progress.t = this.freeProgress.t) })
       return
     }
@@ -159,7 +165,7 @@ export class ScrollController {
     progress.bt = raw - b
     if (ci !== s.chapterIdx || b !== s.beatIdx) {
       useStore.getState().set({ chapterIdx: ci, beatIdx: b, selected: ci !== s.chapterIdx ? null : s.selected })
-      if (ci !== s.chapterIdx) CHAPTERS[ci].onEnter?.(getState())
+      if (ci !== s.chapterIdx) this.enter(CHAPTERS[ci])
     }
   }
 

@@ -398,7 +398,8 @@ export class Observatory {
     const diffDays = (target - this.simDateMs) / 86400000
     if (Math.abs(diffDays) > 60) this.simDateMs = target
     else {
-      const maxStep = 7 * dt * 86400000
+      // dateTau at the floor means "no sweeping" (reduced motion): jump to the target date
+      const maxStep = (p.dateTau <= 0.1 ? 1e4 : 7) * dt * 86400000
       let step = (target - this.simDateMs) * (1 - Math.exp(-dt / Math.max(0.05, p.dateTau)))
       step = Math.max(-maxStep, Math.min(maxStep, step))
       this.simDateMs += step

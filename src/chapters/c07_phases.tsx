@@ -170,6 +170,6 @@ export const phases: Chapter = {
     // observer view from Earth
     const dist = mw.length()
     const fov = (2 * Math.atan(1 / (0.8 * dist)) * 180) / Math.PI
-    p.inset = { from: new Vector3(0, 0, 0), at: mw.clone(), fov, up: new Vector3(0, 1, 0), x: m ? 0.78 : 0.84, y: m ? 0.2 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
+    p.inset = { from: new Vector3(0, 0, 0), at: mw.clone(), fov, up: new Vector3(0, 1, 0), x: m ? 0.22 : 0.84, y: m ? 0.79 : 0.74, r: m ? 0.1 : 0.15, hideEarth: true }
   },
 }

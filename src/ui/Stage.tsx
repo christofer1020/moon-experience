@@ -42,7 +42,7 @@ function BeatView({ item, chapterNum }: { item: Item; chapterNum: string }) {
 }
 
 export function Stage() {
-  const { chapterIdx, beatIdx, phase, selected, indexOpen } = useStore()
+  const { chapterIdx, beatIdx, phase, selected, indexOpen, toolsSheet } = useStore()
   const ch = CHAPTERS[chapterIdx]
   const beat = ch.beats[beatIdx] ?? ch.beats[0]
   const key = `${ch.id}:${beat.id}`
@@ -78,7 +78,7 @@ export function Stage() {
           <span className="hint-pill">Drag to turn the Moon</span>
         </div>
       </div>
-      <div className={`stage ${dim ? 'dim' : ''}`} style={{ opacity: isHero || indexOpen ? 0 : dim ? 0.0 : 1, transition: 'opacity .8s var(--ease)' }} aria-live="polite" id="stage">
+      <div className={`stage ${dim ? 'dim' : ''}`} style={{ opacity: isHero || indexOpen || toolsSheet ? 0 : dim ? 0.0 : 1, transition: 'opacity .8s var(--ease)' }} aria-live="polite" id="stage">
         {items.map((it) => (
           <BeatView key={it.key} item={it} chapterNum={ch.num} />
         ))}

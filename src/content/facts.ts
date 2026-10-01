@@ -67,6 +67,7 @@ export interface Source {
 
 export const SOURCES: Source[] = [
   { name: 'NASA SVS — CGI Moon Kit (LROC color mosaic, LOLA elevation)', url: 'https://svs.gsfc.nasa.gov/4720', use: 'Surface imagery and elevation (public domain)' },
+  { name: 'NASA Trek — LRO WAC global mosaic (303 ppd)', url: 'https://trek.nasa.gov/moon/', use: 'High-resolution close-up tiles around 32 sites (detail added to the colour map)' },
   { name: 'NASA Moon Fact Sheet (NSSDCA)', url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html', use: 'Physical and orbital parameters' },
   { name: 'NASA Science — Moon facts / formation / phases', url: 'https://science.nasa.gov/moon/facts/', use: 'Bulk facts, giant impact, phases' },
   { name: 'IAU Gazetteer of Planetary Nomenclature (USGS)', url: 'https://planetarynames.wr.usgs.gov/', use: 'Feature names, positions and diameters' },
@@ -79,4 +80,5 @@ export const SOURCES: Source[] = [
   { name: 'IAU WGCCRE report (Archinal et al.)', url: 'https://doi.org/10.1007/s10569-010-9320-4', use: 'Moon rotation model (pole and prime meridian)' },
   { name: 'HYG Star Database (D. Nash), CC BY-SA 4.0', url: 'https://github.com/astronexus/HYG-Database', use: 'Real star positions and brightnesses' },
   { name: 'NASA Visible Earth — Blue Marble / Black Marble', url: 'https://visibleearth.nasa.gov/', use: 'Earth day and night imagery' },
+  { name: 'Instrument Serif, Instrument Sans, JetBrains Mono (SIL OFL 1.1)', url: 'https://fontsource.org/', use: 'Typography, served locally via Fontsource' },
 ]
